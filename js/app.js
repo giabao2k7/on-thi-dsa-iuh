@@ -12,9 +12,24 @@
   const store = new Store();
   const appEl = document.getElementById('app');
   const sidebarEl = document.getElementById('sidebar');
+  const sidebarPinBtn = document.getElementById('sidebar-pin-btn');
   const navButtons = Array.from(document.querySelectorAll('#sidebar-nav .nav-btn'));
+  const mobileNavButtons = Array.from(document.querySelectorAll('#mobile-bottom-nav .mnav-btn'));
+  const mobilePageTitleEl = document.getElementById('mobile-page-title');
+  const mobileMistakeCountEl = document.getElementById('mobile-mistake-count');
+  const mobileMistakesBtn = document.getElementById('mobile-mistakes-btn');
+  const mobileThemeBtn = document.getElementById('mobile-theme-btn');
   const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
   const navMistakeCount = document.getElementById('nav-mistake-count');
+
+  const TAB_TITLES = {
+    home: 'Tổng quan',
+    lessons: 'Học 32 dạng',
+    sim: 'Mô phỏng 60fps',
+    practice: 'Luyện biến thể',
+    exam: 'Thi thử',
+    mistakes: 'Sổ câu sai'
+  };
 
   let currentTab = 'home';
   let simViz = null;
@@ -37,16 +52,21 @@
 
   function updateMistakeBadge() {
     const count = store.state.mistakes.filter((x) => !x.resolved).length;
-    navMistakeCount.textContent = count > 99 ? '99+' : String(count);
+    const label = count > 99 ? '99+' : String(count);
+    navMistakeCount.textContent = label;
     navMistakeCount.style.display = count > 0 ? 'inline-block' : 'none';
+    if (mobileMistakeCountEl) mobileMistakeCountEl.textContent = label;
+    if (mobileMistakesBtn) mobileMistakesBtn.style.opacity = count > 0 ? '1' : '0.68';
   }
 
   // =========================================================
-  // THEME TOGGLE (DARK / LIGHT)
+  // THEME TOGGLE (DARK / LIGHT) & DESKTOP HOVER-RAIL PIN
   // =========================================================
   const themeIcon = document.getElementById('theme-icon');
   const themeLabel = document.getElementById('theme-label');
   const themeKnob = document.getElementById('theme-knob');
+  const ICON_MOON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  const ICON_SUN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
 
   function applyTheme(next, save = true) {
     const theme = next === 'light' ? 'light' : 'dark';
@@ -55,27 +75,55 @@
     if (theme === 'dark') {
       themeLabel.textContent = 'Giao diện Tối';
       themeKnob.style.transform = 'translateX(18px)';
-      themeIcon.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+      themeIcon.innerHTML = ICON_MOON;
+      if (mobileThemeBtn) mobileThemeBtn.innerHTML = ICON_MOON;
     } else {
       themeLabel.textContent = 'Giao diện Sáng';
       themeKnob.style.transform = 'translateX(2px)';
-      themeIcon.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+      themeIcon.innerHTML = ICON_SUN;
+      if (mobileThemeBtn) mobileThemeBtn.innerHTML = ICON_SUN;
     }
     if (simViz) simViz.renderCurrent();
     if (modalViz) modalViz.renderCurrent();
     if (miniViz) miniViz.renderCurrent();
   }
 
+  function applySidebarPinned(pinned, save = true) {
+    const on = Boolean(pinned);
+    sidebarEl.classList.toggle('pinned', on);
+    appEl.classList.toggle('sidebar-pinned', on);
+    if (sidebarPinBtn) {
+      sidebarPinBtn.classList.toggle('active', on);
+      sidebarPinBtn.title = on ? 'Bỏ ghim thanh bên (tự thu gọn)' : 'Ghim mở cố định thanh bên';
+    }
+    if (save) store.setPref('sidebarPinned', on);
+    setTimeout(() => {
+      if (currentTab === 'sim' && simViz) { simViz.resize(); simViz.renderCurrent(); }
+      if (currentTab === 'lessons' && miniViz) { miniViz.resize(); miniViz.renderCurrent(); }
+    }, 220);
+  }
+
   document.getElementById('theme-toggle').addEventListener('click', () => {
     const cur = appEl.getAttribute('data-theme');
     applyTheme(cur === 'dark' ? 'light' : 'dark', true);
   });
-
-  // Mobile sidebar drawer
-  document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-    sidebarEl.classList.toggle('open');
-  });
-  document.getElementById('mobile-sim-btn').addEventListener('click', () => switchTab('sim'));
+  if (mobileThemeBtn) {
+    mobileThemeBtn.addEventListener('click', () => {
+      const cur = appEl.getAttribute('data-theme');
+      applyTheme(cur === 'dark' ? 'light' : 'dark', true);
+    });
+  }
+  if (mobileMistakesBtn) {
+    mobileMistakesBtn.addEventListener('click', () => switchTab('mistakes'));
+  }
+  if (sidebarPinBtn) {
+    sidebarPinBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const next = !sidebarEl.classList.contains('pinned');
+      applySidebarPinned(next, true);
+      if (!next) sidebarPinBtn.blur();
+    });
+  }
 
   // =========================================================
   // TAB NAVIGATION
@@ -86,9 +134,11 @@
         return;
       }
     }
+    if (typeof openSimPanel === 'function') openSimPanel(null);
     currentTab = tabId;
-    sidebarEl.classList.remove('open');
     navButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tabId));
+    mobileNavButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tabId));
+    if (mobilePageTitleEl) mobilePageTitleEl.textContent = TAB_TITLES[tabId] || 'DSA Studio IUH';
     tabPanels.forEach((p) => p.classList.toggle('active', p.id === 'tab-' + tabId));
 
     if (tabId === 'home') renderHome();
@@ -106,6 +156,7 @@
   }
 
   navButtons.forEach((btn) => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+  mobileNavButtons.forEach((btn) => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
   // =========================================================
   // 1. HOME / DASHBOARD TAB
@@ -131,123 +182,140 @@
     const topWeak = weak.slice(0, 4);
 
     el.innerHTML = `
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Ôn thi Trắc nghiệm DSA — Chuẩn 32 dạng Slide IUH</h1>
-          <p class="page-sub">4 Chương chuẩn bài giảng · 12 chế độ mô phỏng 60fps · Luyện biến thể · Thi thử offline &amp; web</p>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <button class="btn btn-lg btn-primary" data-jump="lessons">Học 32 dạng</button>
-          <button class="btn btn-lg" data-jump="sim">Mô phỏng 60fps ▶</button>
-          <button class="btn btn-lg" data-jump="practice">Luyện câu mới</button>
-        </div>
-      </div>
-
-      <div class="grid-3">
-        <div class="surface-card stat-card">
+      <div class="home-container">
+        <div class="surface-card hero-card">
           <div>
-            <div class="stat-label">Đã luyện tập</div>
-            <div class="stat-num">${total} <span style="font-size:14px;font-weight:500;color:var(--text-muted);">câu</span></div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${store.state.exams.length} đề thi thử đã nộp</div>
+            <span class="brand-pill">CTDL&amp;GT · ĐH Công nghiệp TP.HCM</span>
+            <h1 class="page-title" style="margin-top:8px;">Ôn thi Trắc nghiệm DSA — Chuẩn 32 dạng Slide IUH</h1>
+            <p class="page-sub">4 Chương chuẩn bài giảng · 12 chế độ mô phỏng 60fps · Luyện biến thể &amp; Thi thử offline</p>
           </div>
-          <div style="width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
-          </div>
-        </div>
-
-        <div class="surface-card stat-card">
-          <div>
-            <div class="stat-label">Độ chính xác</div>
-            <div class="stat-num">${total === 0 ? '—' : pct + '%'}</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${correct} / ${total} câu trả lời đúng</div>
-          </div>
-          <svg width="56" height="56" viewBox="0 0 36 36" style="transform:rotate(-90deg);">
-            <circle cx="18" cy="18" r="15" fill="none" stroke="var(--border-strong)" stroke-width="3.5"></circle>
-            <circle cx="18" cy="18" r="15" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-dasharray="${circ}" stroke-dashoffset="${total === 0 ? circ : offset}" stroke-linecap="round"></circle>
-          </svg>
-        </div>
-
-        <div class="surface-card stat-card">
-          <div>
-            <div class="stat-label">Sổ câu sai</div>
-            <div class="stat-num" style="color:var(--amber-text);">${wrong} <span style="font-size:14px;font-weight:500;color:var(--text-muted);">câu cần ôn</span></div>
-            <button class="btn" data-jump="mistakes" style="margin-top:8px;padding:4px 10px;">Mở sổ câu sai →</button>
-          </div>
-          <div style="width:48px;height:48px;border-radius:14px;background:var(--amber-soft);color:var(--amber-text);display:flex;align-items:center;justify-content:center;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid-2" style="margin-bottom:18px;">
-        <div class="surface-card" style="padding:20px;display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <strong style="font-size:15px;">Lộ trình ôn thi theo 4 Chương IUH</strong>
-            <span class="brand-pill">32 dạng chuẩn</span>
-          </div>
-          <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chương 2 · Tìm kiếm &amp; Sắp xếp (Dạng 1–10, 30)</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Big-O, Linear/Binary Search, Bubble (Phải→Trái), Selection, Insertion, Interchange, Quick Sort</div>
-          </div>
-          <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chương 3 · Danh sách liên kết (Dạng 11–14)</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">DSLK đơn/đôi/vòng, pHead/pTail, Chèn/Xóa, Đổi cặp &amp; Đệ quy</div>
-          </div>
-          <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chương 4 · Stack, Queue &amp; Biểu thức (Dạng 15–20, 31)</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">LIFO/FIFO, Hàng vòng, Đổi cơ số nhị phân, Ngoặc, Hậu tố (RPN)</div>
-          </div>
-          <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chương 5 · Cây nhị phân, BST &amp; Cây AVL (Dạng 21–29, 32)</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">NLR/LNR/LRN, Lưu mảng 2i, Thế mạng Trái/Phải BST, Xoay CSCB AVL</div>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-lg btn-primary" data-jump="sim">▶ Mở mô phỏng</button>
+            <button type="button" class="btn btn-lg" data-jump="lessons">Học 32 dạng</button>
+            <button type="button" class="btn btn-lg" data-jump="practice">Luyện câu mới</button>
           </div>
         </div>
 
-        <div class="surface-card" style="padding:20px;display:flex;flex-direction:column;gap:14px;">
-          <strong style="font-size:15px;">${topWeak.length ? 'Dạng nên luyện tiếp theo dữ liệu của bạn' : 'Cách dùng hiệu quả nhất'}</strong>
-          ${topWeak.length ? `
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              ${topWeak.map((w) => `
-                <div class="surface-sub" style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <div>
-                    <div style="font-size:13px;font-weight:600;">${esc(lessonLabel(w.id))}</div>
-                    <div style="font-size:12px;color:var(--text-muted);">Đúng ${Math.round(w.rate * 100)}% (${w.count} lần làm)</div>
-                  </div>
-                  <button class="btn btn-primary" data-practice-type="${w.id}">Luyện ngay</button>
+        <div class="grid-3">
+          <div class="surface-card stat-card">
+            <div>
+              <div class="stat-label">Đã luyện</div>
+              <div class="stat-num">${total} <span style="font-size:13px;font-weight:500;color:var(--text-muted);">câu</span></div>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">${store.state.exams.length} đề thi thử</div>
+            </div>
+            <div class="stat-visual" style="width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+            </div>
+          </div>
+
+          <div class="surface-card stat-card">
+            <div>
+              <div class="stat-label">Chính xác</div>
+              <div class="stat-num" style="color:var(--accent);">${total === 0 ? '—' : pct + '%'}</div>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">${correct} / ${total} câu đúng</div>
+            </div>
+            <svg class="stat-visual" width="52" height="52" viewBox="0 0 36 36" style="transform:rotate(-90deg);">
+              <circle cx="18" cy="18" r="15" fill="none" stroke="var(--border-strong)" stroke-width="3.5"></circle>
+              <circle cx="18" cy="18" r="15" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-dasharray="${circ}" stroke-dashoffset="${total === 0 ? circ : offset}" stroke-linecap="round"></circle>
+            </svg>
+          </div>
+
+          <button type="button" class="surface-card stat-card stat-card-btn" data-jump="mistakes">
+            <div>
+              <div class="stat-label" style="color:var(--amber-text);">Sổ câu sai</div>
+              <div class="stat-num" style="color:var(--amber-text);">${wrong} <span style="font-size:13px;font-weight:500;color:var(--text-muted);">cần ôn</span></div>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">Mở sổ câu sai →</div>
+            </div>
+            <div class="stat-visual" style="width:44px;height:44px;border-radius:12px;background:var(--amber-soft);color:var(--amber-text);display:flex;align-items:center;justify-content:center;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+          </button>
+        </div>
+
+        <div class="grid-2">
+          <div class="surface-card" style="padding:18px;display:flex;flex-direction:column;gap:9px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+              <strong style="font-size:14.5px;">Lộ trình ôn thi 4 Chương IUH</strong>
+              <span class="brand-pill">32 dạng chuẩn</span>
+            </div>
+            ${[
+              ['Chương 2 · Tìm kiếm & Sắp xếp', 'Dạng 1–10, 30 · Big-O, Binary, Bubble (R→L), Quick Sort'],
+              ['Chương 3 · Danh sách liên kết', 'Dạng 11–14 · DSLK đơn/đôi/vòng, pHead/pTail, Đổi cặp'],
+              ['Chương 4 · Stack, Queue & Biểu thức', 'Dạng 15–20, 31 · LIFO/FIFO, Hàng vòng, Nhị phân, Hậu tố'],
+              ['Chương 5 · Cây nhị phân, BST & AVL', 'Dạng 21–29, 32 · Duyệt cây, Lưu mảng 2i, Thế mạng, Xoay AVL']
+            ].map(([chTitle, chDesc]) => `
+              <button type="button" class="surface-sub chapter-link-btn" data-chapter-jump="${esc(chTitle)}">
+                <div style="min-width:0;">
+                  <div style="font-size:13px;font-weight:700;">${esc(chTitle)}</div>
+                  <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">${esc(chDesc)}</div>
                 </div>
-              `).join('')}
-            </div>
-          ` : `
-            <div class="surface-sub" style="padding:14px;font-size:13px;line-height:1.65;">
-              1. Vào <strong>Học 32 dạng</strong> xem sơ đồ trực quan, mô phỏng mini &amp; hướng dẫn đọc nhanh code chuẩn IUH.<br/>
-              2. Vào <strong>Mô phỏng 60fps</strong> xem từng bước chuyển động mượt (12 chế độ, chọn thế mạng Trái/Phải).<br/>
-              3. Vào <strong>Luyện biến thể</strong> để làm các câu sinh số ngẫu nhiên mới hoàn toàn.<br/>
-              4. Chạy <strong>Thi thử</strong> trước khi đi thi thật!
-            </div>
-          `}
-          <div class="tip-box">
-            <strong style="color:var(--amber-text);">Lưu ý đề thi:</strong> Chiều cao cây có thể đếm theo <em>số cạnh</em> hoặc <em>số mức</em>; giá trị <code>pos</code> trong Insertion Sort xét sau vòng <code>while</code>; chia <code>/</code> trong hậu tố dùng chia nguyên.
+                <span style="color:var(--text-muted);font-size:16px;flex-shrink:0;">›</span>
+              </button>
+            `).join('')}
           </div>
-        </div>
-      </div>
 
-      <div class="surface-card" style="padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
-        <div style="font-size:13px;color:var(--text-muted);">
-          Tiến độ được lưu cục bộ trên trình duyệt (<code>localStorage</code>). Bạn có thể sao lưu ra file JSON hoặc khôi phục sang máy khác.
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <button id="btn-export-progress" class="btn">Xuất tiến độ (.json)</button>
-          <label class="btn" style="cursor:pointer;">
-            Nhập tiến độ
-            <input id="input-import-progress" type="file" accept=".json,application/json" style="display:none;" />
-          </label>
-          <button id="btn-reset-progress" class="btn" style="color:var(--rose-text);">Xóa tiến độ</button>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="surface-card" style="padding:18px;display:flex;flex-direction:column;gap:12px;">
+              <strong style="font-size:14.5px;">${topWeak.length ? 'Dạng nên luyện tiếp' : 'Cách dùng hiệu quả nhất'}</strong>
+              ${topWeak.length ? `
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${topWeak.map((w) => `
+                    <div class="surface-sub" style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                      <div style="min-width:0;">
+                        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(lessonLabel(w.id))}</div>
+                        <div style="font-size:11.5px;color:var(--amber-text);">Đúng ${Math.round(w.rate * 100)}% (${w.count} lần làm)</div>
+                      </div>
+                      <button type="button" class="btn btn-primary" data-practice-type="${w.id}">Luyện</button>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <div class="surface-sub" style="padding:13px;font-size:12.5px;line-height:1.65;color:var(--text-soft);">
+                  1. Vào <strong>Học 32 dạng</strong> xem sơ đồ trực quan &amp; hướng dẫn đọc code chuẩn IUH.<br/>
+                  2. Vào <strong>Mô phỏng 60fps</strong> chạy từng bước mượt (chọn được thế mạng Trái/Phải).<br/>
+                  3. Vào <strong>Luyện biến thể</strong> làm câu sinh số ngẫu nhiên mới hoàn toàn.<br/>
+                  4. Chạy <strong>Thi thử</strong> trước khi thi thật!
+                </div>
+              `}
+              <div class="tip-box" style="font-size:12.5px;">
+                <strong style="color:var(--amber-text);">Lưu ý đề thi:</strong> Chiều cao cây có thể đếm theo <em>số cạnh</em> hoặc <em>số mức</em>; giá trị <code>pos</code> trong Insertion Sort xét sau vòng <code>while</code>; chia <code>/</code> trong hậu tố dùng chia nguyên.
+              </div>
+            </div>
+
+            <div class="surface-sub" style="padding:12px 14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
+              <span style="font-size:12px;color:var(--text-muted);">Lưu tiến độ cục bộ (<code>localStorage</code>)</span>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <button id="btn-export-progress" type="button" class="btn btn-ghost">Xuất JSON</button>
+                <label class="btn btn-ghost" style="cursor:pointer;">
+                  Nhập
+                  <input id="input-import-progress" type="file" accept=".json,application/json" style="display:none;" />
+                </label>
+                <button id="btn-reset-progress" type="button" class="btn btn-ghost" style="color:var(--rose-text);">Xóa</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;
 
     el.querySelectorAll('[data-jump]').forEach((b) => {
       b.addEventListener('click', () => switchTab(b.dataset.jump));
+    });
+    el.querySelectorAll('[data-chapter-jump]').forEach((b) => {
+      b.addEventListener('click', () => {
+        selectedChapter = b.dataset.chapterJump;
+        const firstInChapter = Lessons.find((l) => (l.chapter || l.group) === selectedChapter);
+        if (firstInChapter && (Lessons[selectedLessonId - 1]?.chapter || Lessons[selectedLessonId - 1]?.group) !== selectedChapter) {
+          selectedLessonId = firstInChapter.id;
+          selectedLessonSubTab = 'overview';
+          renderLessonDetail();
+        }
+        mobileLessonDetailOpen = false;
+        syncLessonsMobileView();
+        renderChapterChips();
+        renderLessonList();
+        switchTab('lessons');
+      });
     });
     el.querySelectorAll('[data-practice-type]').forEach((b) => {
       b.addEventListener('click', () => openPractice(parseInt(b.dataset.practiceType, 10), null));
@@ -312,35 +380,67 @@
   };
 
   let selectedLessonId = 1;
+  let selectedChapter = 'all';
+  let selectedLessonSubTab = 'overview';
+  let mobileLessonDetailOpen = false;
+  const lessonsTabEl = document.getElementById('tab-lessons');
   const lessonSearch = document.getElementById('lesson-search');
-  const lessonGroup = document.getElementById('lesson-group');
+  const lessonChapterChips = document.getElementById('lesson-chapter-chips');
   const lessonList = document.getElementById('lesson-list');
   const lessonDetail = document.getElementById('lesson-detail');
 
+  function syncLessonsMobileView() {
+    if (lessonsTabEl) {
+      lessonsTabEl.classList.toggle('mobile-detail-open', mobileLessonDetailOpen);
+    }
+  }
+
+  function renderChapterChips() {
+    if (!lessonChapterChips) return;
+    const chapters = Array.from(new Set(Lessons.map((l) => l.chapter || l.group)));
+    const chips = [{ key: 'all', label: 'Tất cả' }].concat(
+      chapters.map((ch, idx) => ({
+        key: ch,
+        label: ch.startsWith('Chương ') ? ch.split('·')[0].trim() : `Nhóm ${idx + 1}`
+      }))
+    );
+    lessonChapterChips.innerHTML = chips.map((c) => `
+      <button type="button" class="chapter-chip ${selectedChapter === c.key ? 'active' : ''}" data-ch="${esc(c.key)}">${esc(c.label)}</button>
+    `).join('');
+    lessonChapterChips.querySelectorAll('button[data-ch]').forEach((b) => {
+      b.addEventListener('click', () => {
+        selectedChapter = b.dataset.ch;
+        renderChapterChips();
+        renderLessonList();
+      });
+    });
+  }
+
   function initLessonsControls() {
-    const chapters = ['Tất cả chương (32 dạng)', ...Array.from(new Set(Lessons.map((l) => l.chapter || l.group)))];
-    lessonGroup.innerHTML = chapters.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+    renderChapterChips();
     lessonSearch.addEventListener('input', renderLessonList);
-    lessonGroup.addEventListener('change', renderLessonList);
     renderLessonList();
     renderLessonDetail();
   }
 
   function renderLessonList() {
     const q = lessonSearch.value.trim().toLowerCase();
-    const grp = lessonGroup.value;
     const filtered = Lessons.filter((l) => {
       const ch = l.chapter || l.group;
-      const grpOk = !grp || grp.startsWith('Tất cả') || ch === grp;
+      const grpOk = selectedChapter === 'all' || ch === selectedChapter;
       const textOk = (l.id + ' ' + l.title + ' ' + l.group + ' ' + ch).toLowerCase().includes(q);
       return grpOk && textOk;
     });
     lessonList.innerHTML = filtered.map((l) => {
       const active = l.id === selectedLessonId;
+      const hasSim = Boolean(l.miniSim || LESSON_SIM_MAP[l.id]);
       return `
-        <button class="lesson-item ${active ? 'active' : ''}" data-lid="${l.id}">
-          <div style="font-size:13px;font-weight:700;">${esc(lessonLabel(l.id))}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${esc(l.chapter || l.group)}</div>
+        <button type="button" class="lesson-item ${active ? 'active' : ''}" data-lid="${l.id}">
+          <span style="display:flex;align-items:flex-start;gap:8px;min-width:0;">
+            <span class="lesson-item-num">${String(l.id).padStart(2, '0')}</span>
+            <span>${esc(l.title)}</span>
+          </span>
+          ${hasSim ? '<span class="lesson-sim-dot" title="Có mô phỏng 60fps"></span>' : ''}
         </button>
       `;
     }).join('') || '<div style="font-size:12px;color:var(--text-muted);padding:10px;">Không tìm thấy dạng phù hợp.</div>';
@@ -348,9 +448,14 @@
     lessonList.querySelectorAll('button[data-lid]').forEach((b) => {
       b.addEventListener('click', () => {
         selectedLessonId = parseInt(b.dataset.lid, 10);
+        selectedLessonSubTab = 'overview';
+        mobileLessonDetailOpen = true;
+        syncLessonsMobileView();
         renderLessonList();
         renderLessonDetail();
         lessonDetail.scrollTop = 0;
+        const sc = lessonDetail.querySelector('.lesson-detail-scroll');
+        if (sc) sc.scrollTop = 0;
       });
     });
   }
@@ -359,16 +464,16 @@
     if (!kind) return '';
     const svgs = {
       bigo: `
-        <svg viewBox="0 0 540 150" style="width:100%;max-width:540px;display:block;">
-          <line x1="40" y1="125" x2="500" y2="125" stroke="var(--border-strong)" stroke-width="2"/>
+        <svg viewBox="0 0 565 150" style="width:100%;max-width:565px;display:block;">
+          <line x1="40" y1="125" x2="495" y2="125" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="40" y1="20" x2="40" y2="125" stroke="var(--border-strong)" stroke-width="2"/>
-          <path d="M 40 118 L 500 118" stroke="#10b981" stroke-width="2.5" fill="none"/>
-          <path d="M 40 120 Q 160 85 500 78" stroke="#14b8a6" stroke-width="2.5" fill="none"/>
-          <path d="M 40 122 Q 260 65 500 38" stroke="#f59e0b" stroke-width="2.5" fill="none"/>
+          <path d="M 40 118 L 495 118" stroke="#10b981" stroke-width="2.5" fill="none"/>
+          <path d="M 40 120 Q 160 85 495 78" stroke="#14b8a6" stroke-width="2.5" fill="none"/>
+          <path d="M 40 122 Q 260 65 495 38" stroke="#f59e0b" stroke-width="2.5" fill="none"/>
           <path d="M 40 124 Q 160 115 245 20" stroke="#f43f5e" stroke-width="2.8" fill="none"/>
-          <text x="505" y="121" fill="#10b981" font-size="11" font-weight="700">O(1)</text>
-          <text x="505" y="81" fill="#14b8a6" font-size="11" font-weight="700">O(log n)</text>
-          <text x="505" y="42" fill="#f59e0b" font-size="11" font-weight="700">O(n)</text>
+          <text x="502" y="121" fill="#10b981" font-size="11" font-weight="700">O(1)</text>
+          <text x="502" y="81" fill="#14b8a6" font-size="11" font-weight="700">O(log n)</text>
+          <text x="502" y="42" fill="#f59e0b" font-size="11" font-weight="700">O(n)</text>
           <text x="255" y="28" fill="#f43f5e" font-size="11" font-weight="700">O(n²) · chậm rất nhanh khi n lớn</text>
           <text x="270" y="142" text-anchor="middle" fill="var(--text-muted)" font-size="11">Kích thước dữ liệu n →</text>
         </svg>`,
@@ -651,104 +756,139 @@
     const l = Lessons[selectedLessonId - 1] || Lessons[0];
     if (!l) return;
     const simPreset = l.miniSim || LESSON_SIM_MAP[l.id];
+    const hasOverviewMini = Boolean(l.miniSim) && selectedLessonSubTab === 'overview';
+    const shortCh = (l.chapter || l.group || '').split('·')[0].trim();
 
     lessonDetail.innerHTML = `
-      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
-        <div>
-          <span class="brand-pill">${esc(l.chapter || l.group)}</span>
-          <h2 style="margin:6px 0 0;font-size:21px;font-weight:700;">${esc(lessonLabel(l.id))}</h2>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <button id="btn-lesson-practice" class="btn btn-primary">Luyện dạng này</button>
-          ${simPreset ? '<button id="btn-lesson-sim" class="btn">Mở mô phỏng toàn màn hình ↗</button>' : ''}
-        </div>
+      <div class="mobile-lesson-bar">
+        <button id="btn-lesson-mob-back" type="button" class="btn btn-ghost" style="padding:5px 8px;">← 32 dạng</button>
+        <span style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dạng ${String(l.id).padStart(2, '0')} · ${esc(shortCh)}</span>
+        <button id="btn-lesson-mob-prac" type="button" class="btn btn-primary" style="padding:5px 10px;">Luyện</button>
       </div>
 
-      <div class="surface-card" style="padding:18px 20px;">
-        <div class="section-tag">Bài mẫu &amp; Minh họa trực quan</div>
-        <p style="margin:0;font-size:14px;line-height:1.65;">${esc(l.problem)}</p>
-        ${l.diagram && l.diagram.length ? renderLessonDiagramSvg(l.diagram[0]) : ''}
-      </div>
-
-      ${l.miniSim ? `
-        <div class="surface-card mini-sim-card">
-          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
-            <div class="section-tag" style="margin:0;">Mô phỏng 60fps trực tiếp ngay trong bài học</div>
-            <span id="mini-step-label" class="font-mono-code" style="font-size:12px;font-weight:700;color:var(--accent);">Bước 1</span>
-          </div>
-          <div id="mini-canvas-wrap" class="mini-sim-canvas-wrap">
-            <canvas id="mini-canvas"></canvas>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
-            <span id="mini-note" style="font-size:12px;color:var(--text-soft);flex:1;min-width:200px;"></span>
-            <div style="display:flex;gap:6px;flex-shrink:0;">
-              <button id="mini-prev" class="btn">◀ Lùi</button>
-              <button id="mini-play" class="btn btn-primary">▶ Tự chạy</button>
-              <button id="mini-next" class="btn">Tiếp ▶</button>
+      <div class="lesson-detail-scroll">
+        <div class="lesson-detail-inner">
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="min-width:0;flex:1;">
+              <span class="brand-pill">${esc(l.chapter || l.group)}</span>
+              <h2 style="margin:6px 0 0;font-size:19px;font-weight:700;line-height:1.35;">${esc(lessonLabel(l.id))}</h2>
+            </div>
+            <div class="lesson-desktop-actions" style="display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0;">
+              <button id="btn-lesson-practice" type="button" class="btn btn-primary">Luyện dạng này</button>
+              ${simPreset ? '<button id="btn-lesson-sim" type="button" class="btn">Mở mô phỏng ↗</button>' : ''}
             </div>
           </div>
-        </div>
-      ` : ''}
 
-      ${(l.code || l.codeNote) ? `
-        <div class="surface-card" style="padding:18px 20px;">
-          <div class="section-tag">Đọc hiểu code chuẩn Slide IUH</div>
-          ${l.code ? `<pre class="code-block">${esc(l.code)}</pre>` : ''}
-          ${l.codeNote ? `<div class="code-note-box"><strong>Điểm cần nhìn khi đọc đề:</strong> ${esc(l.codeNote)}</div>` : ''}
-        </div>
-      ` : ''}
+          <div class="seg-group lesson-subtabs" role="tablist">
+            <button type="button" class="seg-btn ${selectedLessonSubTab === 'overview' ? 'active' : ''}" data-lsub="overview">Bài mẫu &amp; Minh họa</button>
+            <button type="button" class="seg-btn ${selectedLessonSubTab === 'code' ? 'active' : ''}" data-lsub="code">Code &amp; Bẫy thi</button>
+            <button type="button" class="seg-btn ${selectedLessonSubTab === 'steps' ? 'active' : ''}" data-lsub="steps">Lời giải &amp; Kiểm tra</button>
+          </div>
 
-      ${l.table && l.table.length ? `
-        <div class="surface-card" style="padding:18px 20px;">
-          <div class="section-tag">Bảng tổng hợp nhanh</div>
-          <table class="data-table">
-            <thead><tr>${l.table[0].map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
-            <tbody>${l.table.slice(1).map((row) => `<tr>${row.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
-          </table>
-        </div>
-      ` : ''}
+          ${selectedLessonSubTab === 'overview' ? `
+            <div class="surface-card" style="padding:16px 18px;">
+              <div class="section-tag">Bài mẫu &amp; Minh họa trực quan</div>
+              <p style="margin:0;font-size:14px;line-height:1.65;">${esc(l.problem)}</p>
+              ${l.diagram && l.diagram.length ? renderLessonDiagramSvg(l.diagram[0]) : ''}
+            </div>
 
-      <div class="grid-2">
-        <div class="surface-card" style="padding:18px 20px;">
-          <div class="section-tag">Bắt đầu suy luận</div>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            ${l.reasoning.map((r, i) => `
-              <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;">
-                <span style="width:22px;height:22px;border-radius:999px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">${i + 1}</span>
-                <span>${esc(r)}</span>
+            ${l.miniSim ? `
+              <div class="surface-card mini-sim-card">
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
+                  <div class="section-tag" style="margin:0;">Mô phỏng 60fps trực tiếp trong bài học</div>
+                  <span id="mini-step-label" class="font-mono-code" style="font-size:12px;font-weight:700;color:var(--accent);">Bước 1</span>
+                </div>
+                <div id="mini-canvas-wrap" class="mini-sim-canvas-wrap">
+                  <canvas id="mini-canvas"></canvas>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
+                  <span id="mini-note" style="font-size:12px;color:var(--text-soft);flex:1;min-width:180px;"></span>
+                  <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <button id="mini-prev" type="button" class="btn">◀ Lùi</button>
+                    <button id="mini-play" type="button" class="btn btn-primary">▶ Tự chạy</button>
+                    <button id="mini-next" type="button" class="btn">Tiếp ▶</button>
+                  </div>
+                </div>
               </div>
-            `).join('')}
+            ` : (simPreset ? `
+              <div class="surface-sub" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span style="font-size:12.5px;color:var(--text-soft);">Dạng này có mô phỏng tương tác từng bước 60fps.</span>
+                <button type="button" class="btn" data-open-lesson-sim>Mở mô phỏng ↗</button>
+              </div>
+            ` : '')}
+
+            <div class="surface-card" style="padding:16px 18px;">
+              <div class="section-tag">Bắt đầu suy luận</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${l.reasoning.map((r, i) => `
+                  <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;">
+                    <span style="width:22px;height:22px;border-radius:999px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">${i + 1}</span>
+                    <span>${esc(r)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${selectedLessonSubTab === 'code' ? `
+            ${(l.code || l.codeNote) ? `
+              <div class="surface-card" style="padding:16px 18px;">
+                <div class="section-tag">Đọc hiểu code chuẩn Slide IUH</div>
+                ${l.code ? `<pre class="code-block">${esc(l.code)}</pre>` : ''}
+                ${l.codeNote ? `<div class="code-note-box"><strong>Điểm cần nhìn khi đọc đề:</strong> ${esc(l.codeNote)}</div>` : ''}
+              </div>
+            ` : ''}
+
+            ${l.table && l.table.length ? `
+              <div class="surface-card" style="padding:16px 18px;">
+                <div class="section-tag">Bảng tổng hợp nhanh</div>
+                <div class="table-scroll-wrap">
+                  <table class="data-table">
+                    <thead><tr>${l.table[0].map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+                    <tbody>${l.table.slice(1).map((row) => `<tr>${row.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+                  </table>
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="tip-box">
+              <strong style="color:var(--amber-text);">Mẹo nhanh và bẫy hay gặp:</strong> ${esc(l.tip)}
+            </div>
+          ` : ''}
+
+          ${selectedLessonSubTab === 'steps' ? `
+            <div class="surface-card" style="padding:16px 18px;">
+              <div class="section-tag">Giải từng bước</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${l.solution.map((s, i) => `
+                  <div class="surface-sub" style="padding:10px 12px;font-size:13px;">
+                    <strong>Bước ${i + 1}:</strong> ${esc(s)}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="surface-card" style="padding:16px 18px;">
+              <div class="section-tag">Tự kiểm tra</div>
+              <p style="margin:0 0 10px;font-size:13.5px;">${esc(l.practice)}</p>
+              <button id="btn-toggle-lesson-ans" type="button" class="btn">Hiện đáp án tự kiểm tra</button>
+              <div id="lesson-ans-box" style="display:none;margin-top:10px;padding:12px 14px;border-radius:11px;background:var(--emerald-soft);color:var(--emerald-text);font-size:13px;font-weight:600;">
+                ${esc(l.answer)}
+              </div>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:12px;">Nguồn dạng bài: ${esc(l.source)}</div>
+            </div>
+          ` : ''}
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:4px;">
+            <button id="btn-lesson-prev" type="button" class="btn" ${l.id <= 1 ? 'disabled' : ''}>◀ Dạng trước</button>
+            ${simPreset ? '<button type="button" class="btn btn-ghost mobile-only-btn" data-open-lesson-sim style="color:var(--accent);">Mô phỏng ↗</button>' : ''}
+            <button id="btn-lesson-next" type="button" class="btn" ${l.id >= Lessons.length ? 'disabled' : ''}>Dạng tiếp ▶</button>
           </div>
         </div>
-
-        <div class="surface-card" style="padding:18px 20px;">
-          <div class="section-tag">Giải từng bước</div>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            ${l.solution.map((s, i) => `
-              <div class="surface-sub" style="padding:10px 12px;font-size:13px;">
-                <strong>Bước ${i + 1}:</strong> ${esc(s)}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-
-      <div class="tip-box">
-        <strong style="color:var(--amber-text);">Mẹo nhanh và bẫy hay gặp:</strong> ${esc(l.tip)}
-      </div>
-
-      <div class="surface-card" style="padding:18px 20px;">
-        <div class="section-tag">Tự kiểm tra</div>
-        <p style="margin:0 0 10px;font-size:14px;">${esc(l.practice)}</p>
-        <button id="btn-toggle-lesson-ans" class="btn">Hiện đáp án tự kiểm tra</button>
-        <div id="lesson-ans-box" style="display:none;margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--emerald-soft);color:var(--emerald-text);font-size:13px;font-weight:600;">
-          ${esc(l.answer)}
-        </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:12px;">Nguồn dạng bài: ${esc(l.source)}</div>
       </div>
     `;
 
-    if (l.miniSim) {
+    if (hasOverviewMini) {
       const mSteps = buildStepsForPreset(l.miniSim);
       let mIdx = 0;
       let mPlaying = false;
@@ -761,8 +901,10 @@
       const syncMini = () => {
         const st = mSteps[mIdx];
         if (!st) return;
-        document.getElementById('mini-step-label').textContent = `Bước ${mIdx + 1}/${mSteps.length} · ${st.title}`;
-        document.getElementById('mini-note').textContent = st.note;
+        const lbl = document.getElementById('mini-step-label');
+        const noteEl = document.getElementById('mini-note');
+        if (lbl) lbl.textContent = `Bước ${mIdx + 1}/${mSteps.length} · ${st.title}`;
+        if (noteEl) noteEl.textContent = st.note;
       };
       syncMini();
       requestAnimationFrame(() => { if (miniViz) { miniViz.resize(); miniViz.renderCurrent(); } });
@@ -804,49 +946,113 @@
       miniViz = null;
     }
 
-    document.getElementById('btn-lesson-practice').addEventListener('click', () => openPractice(l.id, null));
-    if (simPreset) {
-      document.getElementById('btn-lesson-sim').addEventListener('click', () => {
-        if (simPreset.bubbleDir) store.setPref('bubbleDir', simPreset.bubbleDir);
-        switchTab('sim');
-        selectSimMode(simPreset.mode, simPreset.arr, simPreset.key);
+    const mobBackBtn = document.getElementById('btn-lesson-mob-back');
+    if (mobBackBtn) {
+      mobBackBtn.addEventListener('click', () => {
+        mobileLessonDetailOpen = false;
+        syncLessonsMobileView();
       });
     }
+    const mobPracBtn = document.getElementById('btn-lesson-mob-prac');
+    if (mobPracBtn) mobPracBtn.addEventListener('click', () => openPractice(l.id, null));
+
+    const pracBtn = document.getElementById('btn-lesson-practice');
+    if (pracBtn) pracBtn.addEventListener('click', () => openPractice(l.id, null));
+
+    const openSim = () => {
+      if (!simPreset) return;
+      if (simPreset.bubbleDir) store.setPref('bubbleDir', simPreset.bubbleDir);
+      switchTab('sim');
+      selectSimMode(simPreset.mode, simPreset.arr, simPreset.key);
+    };
+    const simBtn = document.getElementById('btn-lesson-sim');
+    if (simBtn) simBtn.addEventListener('click', openSim);
+    lessonDetail.querySelectorAll('[data-open-lesson-sim]').forEach((b) => b.addEventListener('click', openSim));
+
+    lessonDetail.querySelectorAll('button[data-lsub]').forEach((b) => {
+      b.addEventListener('click', () => {
+        selectedLessonSubTab = b.dataset.lsub;
+        renderLessonDetail();
+      });
+    });
+
     const ansBtn = document.getElementById('btn-toggle-lesson-ans');
     const ansBox = document.getElementById('lesson-ans-box');
-    ansBtn.addEventListener('click', () => {
-      const open = ansBox.style.display === 'block';
-      ansBox.style.display = open ? 'none' : 'block';
-      ansBtn.textContent = open ? 'Hiện đáp án tự kiểm tra' : 'Ẩn đáp án';
-    });
+    if (ansBtn && ansBox) {
+      ansBtn.addEventListener('click', () => {
+        const open = ansBox.style.display === 'block';
+        ansBox.style.display = open ? 'none' : 'block';
+        ansBtn.textContent = open ? 'Hiện đáp án tự kiểm tra' : 'Ẩn đáp án';
+      });
+    }
+
+    const prevL = document.getElementById('btn-lesson-prev');
+    const nextL = document.getElementById('btn-lesson-next');
+    if (prevL) {
+      prevL.addEventListener('click', () => {
+        if (l.id > 1) {
+          selectedLessonId = l.id - 1;
+          selectedLessonSubTab = 'overview';
+          renderLessonList();
+          renderLessonDetail();
+          lessonDetail.scrollTop = 0;
+        }
+      });
+    }
+    if (nextL) {
+      nextL.addEventListener('click', () => {
+        if (l.id < Lessons.length) {
+          selectedLessonId = l.id + 1;
+          selectedLessonSubTab = 'overview';
+          renderLessonList();
+          renderLessonDetail();
+          lessonDetail.scrollTop = 0;
+        }
+      });
+    }
   }
 
   // =========================================================
-  // 3. SIMULATOR TAB (ALL 12 MODES, 60FPS)
+  // 3. SIMULATOR TAB (ALL 12 MODES, CANVAS-FIRST + POPOVER/SHEET)
   // =========================================================
   const SIM_MODES = [
-    { id: 'bubble', label: 'Bubble Sort', help: 'Nhập 1–12 số nguyên. Hỗ trợ chiều Phải → Trái (Slide IUH) và Trái → Phải, trượt vòng cung mượt mà.' },
-    { id: 'selection', label: 'Selection Sort', help: 'Quét tìm chỉ số min trong đoạn chưa sắp rồi đổi 1 lần cuối lượt.' },
-    { id: 'insertion', label: 'Insertion Sort', help: 'Phần tử x nhấc lên vùng tạm (pos), các số lớn hơn trượt sang phải rồi chèn vào pos + 1.' },
-    { id: 'interchange', label: 'Interchange Sort', help: 'Cố định i, tô sáng cặp so sánh (a[i], a[j]) trước rồi mới sang bước đổi chỗ nếu nghịch thế.' },
-    { id: 'quick', label: 'Quick Sort', help: 'Quick Sort (Slide IUH): chọn mốc giữa x = a[(l+r)/2], phân hoạch và đệ quy hai đoạn.' },
-    { id: 'binary', label: 'Tìm nhị phân', help: 'Nhập dãy tăng dần. Ô khóa: giá trị cần tìm trong đoạn đóng [left, right].', keyLabel: 'Khóa tìm:' },
-    { id: 'stack', label: 'Stack Push/Pop', help: 'Số ≥ 0: push(v) vào đỉnh · Số -1: pop() lấy phần tử trên đỉnh (LIFO).' },
-    { id: 'queue', label: 'Queue Enq/Deq', help: 'Số ≥ 0: enqueue(v) vào rear · Số -1: dequeue() lấy ở front (FIFO).' },
-    { id: 'postfix', label: 'Hậu tố', help: 'Nhập token cách bởi khoảng trắng (hỗ trợ + - * /, chia nguyên). VD: 8 3 2 * - 4 +' },
-    { id: 'linked', label: 'DSLK đổi cặp', help: 'Hiển thị cặp nút (i, i+1) trước rồi mới đổi dữ liệu từng cặp, không đổi liên kết next.' },
-    { id: 'bst', label: 'Cây BST', help: 'Dò từ gốc xuống để chèn; khi xóa nút 2 con có thể chọn thế mạng Phải nhất cây trái / Trái nhất cây phải.', keyLabel: 'Khóa xóa:' },
-    { id: 'avl', label: 'Cây AVL (Xoay)', help: 'Mặc định CSCB = h(Phải) − h(Trái) theo Slide IUH; hỗ trợ xoay LL/RR/LR/RL & chọn thế mạng 2 con.', keyLabel: 'Khóa xóa:' }
+    { id: 'avl', group: 'Cây BST & AVL', label: 'Cây AVL (Xoay)', help: 'Mặc định CSCB = h(Phải) − h(Trái) theo Slide IUH; hỗ trợ xoay LL/RR/LR/RL & chọn thế mạng 2 con.', keyLabel: 'Khóa xóa:' },
+    { id: 'bst', group: 'Cây BST & AVL', label: 'Cây BST', help: 'Dò từ gốc xuống để chèn; khi xóa nút 2 con có thể chọn thế mạng Phải nhất cây trái / Trái nhất cây phải.', keyLabel: 'Khóa xóa:' },
+    { id: 'bubble', group: 'Sắp xếp (5 thuật toán)', label: 'Bubble Sort', help: 'Nhập 1–12 số nguyên. Hỗ trợ chiều Phải → Trái (Slide IUH) và Trái → Phải, trượt vòng cung mượt mà.' },
+    { id: 'quick', group: 'Sắp xếp (5 thuật toán)', label: 'Quick Sort', help: 'Quick Sort (Slide IUH): chọn mốc giữa x = a[(l+r)/2], phân hoạch và đệ quy hai đoạn.' },
+    { id: 'selection', group: 'Sắp xếp (5 thuật toán)', label: 'Selection Sort', help: 'Quét tìm chỉ số min trong đoạn chưa sắp rồi đổi 1 lần cuối lượt.' },
+    { id: 'insertion', group: 'Sắp xếp (5 thuật toán)', label: 'Insertion Sort', help: 'Phần tử x nhấc lên vùng tạm (pos), các số lớn hơn trượt sang phải rồi chèn vào pos + 1.' },
+    { id: 'interchange', group: 'Sắp xếp (5 thuật toán)', label: 'Interchange Sort', help: 'Cố định i, tô sáng cặp so sánh (a[i], a[j]) trước rồi mới sang bước đổi chỗ nếu nghịch thế.' },
+    { id: 'binary', group: 'Tìm kiếm & Tuyến tính', label: 'Tìm nhị phân', help: 'Nhập dãy tăng dần. Ô khóa: giá trị cần tìm trong đoạn đóng [left, right].', keyLabel: 'Khóa tìm:' },
+    { id: 'stack', group: 'Tìm kiếm & Tuyến tính', label: 'Stack Push/Pop', help: 'Số ≥ 0: push(v) vào đỉnh · Số -1: pop() lấy phần tử trên đỉnh (LIFO).' },
+    { id: 'queue', group: 'Tìm kiếm & Tuyến tính', label: 'Queue Enq/Deq', help: 'Số ≥ 0: enqueue(v) vào rear · Số -1: dequeue() lấy ở front (FIFO).' },
+    { id: 'postfix', group: 'Tìm kiếm & Tuyến tính', label: 'Hậu tố', help: 'Nhập token cách bởi khoảng trắng (hỗ trợ + - * /, chia nguyên). VD: 8 3 2 * - 4 +' },
+    { id: 'linked', group: 'Tìm kiếm & Tuyến tính', label: 'DSLK đổi cặp', help: 'Hiển thị cặp nút (i, i+1) trước rồi mới đổi dữ liệu từng cặp, không đổi liên kết next.' }
   ];
+
+  const SIM_GROUP_ORDER = ['Cây BST & AVL', 'Sắp xếp (5 thuật toán)', 'Tìm kiếm & Tuyến tính'];
+  const SIM_SPEEDS = [0.5, 1, 1.5, 2];
 
   let simMode = 'avl';
   let simSteps = [];
   let simIndex = 0;
   let simPlaying = false;
   let simPlayTimer = null;
+  let openSimPanelName = null;
 
   const simModesEl = document.getElementById('sim-modes');
-  const simCtxBarEl = document.getElementById('sim-ctx-bar');
+  const simModeLabelEl = document.getElementById('sim-mode-label');
+  const simDataSummaryEl = document.getElementById('sim-data-summary');
+  const simKeyChipEl = document.getElementById('sim-key-chip');
+  const simOptBadgeEl = document.getElementById('sim-opt-badge');
+  const simOptsBodyEl = document.getElementById('sim-opts-body');
+  const simDeleteFloatEl = document.getElementById('sim-delete-float');
+  const simOverlayBackdropEl = document.getElementById('sim-overlay-backdrop');
+  const simPanels = {
+    modes: document.getElementById('sim-mode-panel'),
+    data: document.getElementById('sim-data-panel'),
+    opts: document.getElementById('sim-opts-panel')
+  };
   const simHelpEl = document.getElementById('sim-help');
   const simInputEl = document.getElementById('sim-input');
   const simKeyWrapEl = document.getElementById('sim-key-wrap');
@@ -859,6 +1065,7 @@
   const stepNoteEl = document.getElementById('step-note');
   const stepSliderEl = document.getElementById('step-slider');
   const btnPlayEl = document.getElementById('btn-play');
+  const btnSpeedCycleEl = document.getElementById('btn-speed-cycle');
 
   simViz = new Visualizer(
     document.getElementById('sim-canvas'),
@@ -867,12 +1074,72 @@
   );
   simViz.avlBfMode = store.getPref('avlBfMode');
 
+  function openSimPanel(name) {
+    openSimPanelName = name || null;
+    Object.keys(simPanels).forEach((k) => {
+      if (simPanels[k]) simPanels[k].classList.toggle('open', k === openSimPanelName);
+    });
+    if (simOverlayBackdropEl) simOverlayBackdropEl.classList.toggle('open', Boolean(openSimPanelName));
+    if (openSimPanelName === 'data' && window.innerWidth > 768 && simInputEl) {
+      setTimeout(() => simInputEl.focus(), 40);
+    }
+  }
+
+  function toggleSimPanel(name) {
+    openSimPanel(openSimPanelName === name ? null : name);
+  }
+
+  document.getElementById('sim-mode-trigger').addEventListener('click', () => toggleSimPanel('modes'));
+  document.getElementById('sim-data-trigger').addEventListener('click', () => toggleSimPanel('data'));
+  document.getElementById('sim-opts-trigger').addEventListener('click', () => toggleSimPanel('opts'));
+  if (simOverlayBackdropEl) simOverlayBackdropEl.addEventListener('click', () => openSimPanel(null));
+  document.querySelectorAll('[data-close-pop]').forEach((b) => b.addEventListener('click', () => openSimPanel(null)));
+
+  function updateSimTopbarSummary() {
+    const meta = SIM_MODES.find((m) => m.id === simMode) || SIM_MODES[0];
+    if (simModeLabelEl) simModeLabelEl.textContent = meta.label;
+    if (simDataSummaryEl) simDataSummaryEl.textContent = simInputEl.value.trim() || '...';
+    if (simKeyChipEl) {
+      const k = simKeyEl.value.trim();
+      if (meta.keyLabel && k !== '') {
+        simKeyChipEl.textContent = (simMode === 'binary' ? 'Tìm ' : 'Xóa ') + k;
+        simKeyChipEl.style.display = 'inline-block';
+      } else {
+        simKeyChipEl.style.display = 'none';
+      }
+    }
+    if (simOptBadgeEl) {
+      if (simMode === 'avl') {
+        const bfMode = store.getPref('avlBfMode') || 'iuh';
+        simOptBadgeEl.textContent = bfMode === 'iuh' ? 'CSCB = h(R)−h(L)' : 'BF = h(L)−h(R)';
+        simOptBadgeEl.style.display = 'inline-block';
+      } else if (simMode === 'bubble') {
+        const bdir = store.getPref('bubbleDir') || 'rtl';
+        simOptBadgeEl.textContent = bdir === 'rtl' ? 'Phải → Trái (IUH)' : 'Trái → Phải';
+        simOptBadgeEl.style.display = 'inline-block';
+      } else {
+        simOptBadgeEl.style.display = 'none';
+      }
+    }
+  }
+
   function renderSimModePills() {
-    simModesEl.innerHTML = SIM_MODES.map((m) =>
-      `<button data-mode="${m.id}" class="pill-btn ${m.id === simMode ? 'active' : ''}">${m.label}</button>`
-    ).join('');
-    simModesEl.querySelectorAll('button').forEach((b) => {
-      b.addEventListener('click', () => selectSimMode(b.dataset.mode));
+    simModesEl.innerHTML = SIM_GROUP_ORDER.map((groupName) => {
+      const items = SIM_MODES.filter((m) => m.group === groupName);
+      return `
+        <div>
+          <div class="sim-group-label">${esc(groupName)}</div>
+          <div class="sim-mode-grid">
+            ${items.map((m) => `<button type="button" data-mode="${m.id}" class="sim-mode-opt ${m.id === simMode ? 'active' : ''}">${esc(m.label)}</button>`).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+    simModesEl.querySelectorAll('button[data-mode]').forEach((b) => {
+      b.addEventListener('click', () => {
+        selectSimMode(b.dataset.mode);
+        openSimPanel(null);
+      });
     });
   }
 
@@ -892,6 +1159,7 @@
 
   function buildSimSteps(keepIndex = 0) {
     store.setSimInput(simMode, simInputEl.value, simKeyEl.value);
+    updateSimTopbarSummary();
     simErrorEl.style.display = 'none';
     try {
       let nextSteps;
@@ -943,66 +1211,46 @@
       updateSimReadout();
       simViz.setData(simMode, simSteps);
       if (simIndex > 0) simViz.transitionTo(simIndex, simIndex, true);
+      return true;
     } catch (err) {
       simErrorEl.textContent = err.message;
-      simErrorEl.style.display = 'inline';
+      simErrorEl.style.display = 'block';
+      return false;
     }
   }
 
   function renderSimCtxBar() {
-    if (!simCtxBarEl) return;
-    const prevH = simCtxBarEl.offsetHeight;
-    const parts = [];
+    updateSimTopbarSummary();
     const st = simSteps[simIndex];
 
-    if (simMode === 'bubble') {
+    if (simOptsBodyEl) {
       const bdir = store.getPref('bubbleDir') || 'rtl';
-      parts.push(`
-        <div class="ctx-group">
-          <span class="ctx-label">Chiều nổi bọt:</span>
-          <button type="button" class="pill-btn ${bdir === 'rtl' ? 'active' : ''}" data-bdir="rtl">Phải → Trái (Slide IUH)</button>
-          <button type="button" class="pill-btn ${bdir === 'ltr' ? 'active' : ''}" data-bdir="ltr">Trái → Phải</button>
-        </div>
-      `);
-    }
-
-    if (simMode === 'avl') {
       const bfMode = store.getPref('avlBfMode') || 'iuh';
-      parts.push(`
-        <div class="ctx-group">
-          <span class="ctx-label">Chỉ số cân bằng:</span>
-          <button type="button" class="pill-btn ${bfMode === 'iuh' ? 'active' : ''}" data-bf="iuh">CSCB = h(R)−h(L) (Slide IUH)</button>
-          <button type="button" class="pill-btn ${bfMode === 'std' ? 'active' : ''}" data-bf="std">BF = h(L)−h(R)</button>
+      simOptsBodyEl.innerHTML = `
+        <div>
+          <div class="ctx-label" style="margin-bottom:6px;">Chỉ số cân bằng (Cây AVL)</div>
+          <div class="seg-group" style="width:100%;">
+            <button type="button" class="seg-btn ${bfMode === 'iuh' ? 'active' : ''}" data-bf="iuh" style="flex:1;">CSCB = h(R)−h(L) (IUH)</button>
+            <button type="button" class="seg-btn ${bfMode === 'std' ? 'active' : ''}" data-bf="std" style="flex:1;">BF = h(L)−h(R)</button>
+          </div>
         </div>
-      `);
-    }
-
-    if ((simMode === 'bst' || simMode === 'avl') && st && st.deleteChoice) {
-      const dc = st.deleteChoice;
-      parts.push(`
-        <div class="delete-choice-banner">
-          <span class="ctx-label">Xóa nút ${dc.targetVal} (2 con) — Chọn thế mạng:</span>
-          <button type="button" class="pill-btn ${dc.selected === 'left' ? 'active' : ''}" data-rside="left">Phải nhất cây trái (${dc.leftVal})</button>
-          <button type="button" class="pill-btn ${dc.selected === 'right' ? 'active' : ''}" data-rside="right">Trái nhất cây phải (${dc.rightVal})</button>
+        <div>
+          <div class="ctx-label" style="margin-bottom:6px;">Chiều nổi bọt (Bubble Sort)</div>
+          <div class="seg-group" style="width:100%;">
+            <button type="button" class="seg-btn ${bdir === 'rtl' ? 'active' : ''}" data-bdir="rtl" style="flex:1;">Phải → Trái (IUH)</button>
+            <button type="button" class="seg-btn ${bdir === 'ltr' ? 'active' : ''}" data-bdir="ltr" style="flex:1;">Trái → Phải</button>
+          </div>
         </div>
-      `);
-    }
+      `;
 
-    if (!parts.length) {
-      simCtxBarEl.style.display = 'none';
-      simCtxBarEl.innerHTML = '';
-    } else {
-      simCtxBarEl.style.display = 'flex';
-      simCtxBarEl.innerHTML = parts.join('');
-
-      simCtxBarEl.querySelectorAll('[data-bdir]').forEach((b) => {
+      simOptsBodyEl.querySelectorAll('[data-bdir]').forEach((b) => {
         b.addEventListener('click', () => {
           store.setPref('bubbleDir', b.dataset.bdir);
-          buildSimSteps(0);
+          buildSimSteps(simMode === 'bubble' ? 0 : simIndex);
         });
       });
 
-      simCtxBarEl.querySelectorAll('[data-bf]').forEach((b) => {
+      simOptsBodyEl.querySelectorAll('[data-bf]').forEach((b) => {
         b.addEventListener('click', () => {
           const mode = b.dataset.bf;
           store.setPref('avlBfMode', mode);
@@ -1011,18 +1259,30 @@
           simViz.renderCurrent();
         });
       });
-
-      simCtxBarEl.querySelectorAll('[data-rside]').forEach((b) => {
-        b.addEventListener('click', () => {
-          stopSimPlay();
-          store.setPref('treeReplaceSide', b.dataset.rside);
-          buildSimSteps(simIndex);
-        });
-      });
     }
 
-    if (prevH !== simCtxBarEl.offsetHeight && currentTab === 'sim') {
-      simViz.resize();
+    if (simDeleteFloatEl) {
+      if ((simMode === 'bst' || simMode === 'avl') && st && st.deleteChoice) {
+        const dc = st.deleteChoice;
+        simDeleteFloatEl.style.display = 'flex';
+        simDeleteFloatEl.innerHTML = `
+          <span class="ctx-label">Xóa ${dc.targetVal} (2 con) — Thế mạng:</span>
+          <div class="seg-group">
+            <button type="button" class="seg-btn ${dc.selected === 'left' ? 'active' : ''}" data-rside="left">Phải nhất trái (${dc.leftVal})</button>
+            <button type="button" class="seg-btn ${dc.selected === 'right' ? 'active' : ''}" data-rside="right">Trái nhất phải (${dc.rightVal})</button>
+          </div>
+        `;
+        simDeleteFloatEl.querySelectorAll('[data-rside]').forEach((b) => {
+          b.addEventListener('click', () => {
+            stopSimPlay();
+            store.setPref('treeReplaceSide', b.dataset.rside);
+            buildSimSteps(simIndex);
+          });
+        });
+      } else {
+        simDeleteFloatEl.style.display = 'none';
+        simDeleteFloatEl.innerHTML = '';
+      }
     }
   }
 
@@ -1034,7 +1294,7 @@
     stepNoteEl.textContent = st.note;
     stepSliderEl.value = simIndex;
     stepVarsEl.innerHTML = (st.vars || []).map((v) =>
-      `<span class="font-mono-code" style="font-size:12px;padding:3px 9px;border-radius:8px;background:var(--bg-surface-2);border:1px solid var(--border-subtle);color:var(--text-soft);">${esc(v)}</span>`
+      `<span class="font-mono-code" style="font-size:11.5px;padding:2px 8px;border-radius:7px;background:var(--bg-surface-2);border:1px solid var(--border-subtle);color:var(--text-soft);">${esc(v)}</span>`
     ).join('');
     renderSimCtxBar();
   }
@@ -1108,13 +1368,7 @@
     buildSimSteps();
   }
 
-  simInputEl.addEventListener('input', () => store.setSimInput(simMode, simInputEl.value, simKeyEl.value));
-  simKeyEl.addEventListener('input', () => store.setSimInput(simMode, simInputEl.value, simKeyEl.value));
-  simInputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') buildSimSteps(0); });
-  simKeyEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') buildSimSteps(0); });
-  document.getElementById('sim-apply').addEventListener('click', () => buildSimSteps(0));
-
-  document.getElementById('sim-random').addEventListener('click', () => {
+  function randomizeSimInput() {
     if (simMode === 'binary') {
       const arr = [];
       let v = Math.floor(Math.random() * 5) + 1;
@@ -1143,7 +1397,38 @@
       simInputEl.value = arr.join(', ');
     }
     buildSimSteps(0);
+  }
+
+  function setSimSpeed(nextSpeed) {
+    simViz.speed = nextSpeed;
+    document.querySelectorAll('.speed-pill').forEach((b) => {
+      b.classList.toggle('active', parseFloat(b.dataset.speed) === nextSpeed);
+    });
+    if (btnSpeedCycleEl) btnSpeedCycleEl.textContent = nextSpeed + 'x';
+    if (simPlaying) {
+      clearTimeout(simPlayTimer);
+      scheduleSimPlay();
+    }
+  }
+
+  simInputEl.addEventListener('input', () => {
+    store.setSimInput(simMode, simInputEl.value, simKeyEl.value);
+    updateSimTopbarSummary();
   });
+  simKeyEl.addEventListener('input', () => {
+    store.setSimInput(simMode, simInputEl.value, simKeyEl.value);
+    updateSimTopbarSummary();
+  });
+  simInputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' && buildSimSteps(0)) openSimPanel(null); });
+  simKeyEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' && buildSimSteps(0)) openSimPanel(null); });
+  document.getElementById('sim-apply').addEventListener('click', () => {
+    if (buildSimSteps(0)) openSimPanel(null);
+  });
+  document.getElementById('sim-random').addEventListener('click', randomizeSimInput);
+  const simRandQuick = document.getElementById('sim-random-quick');
+  const simRandMob = document.getElementById('sim-random-mob');
+  if (simRandQuick) simRandQuick.addEventListener('click', randomizeSimInput);
+  if (simRandMob) simRandMob.addEventListener('click', randomizeSimInput);
 
   document.getElementById('btn-first').addEventListener('click', () => { stopSimPlay(); goSimStep(0); });
   document.getElementById('btn-prev').addEventListener('click', () => { stopSimPlay(); goSimStep(simIndex - 1); });
@@ -1153,17 +1438,21 @@
   stepSliderEl.addEventListener('input', (e) => { stopSimPlay(); goSimStep(parseInt(e.target.value, 10), true); });
 
   document.querySelectorAll('.speed-pill').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      simViz.speed = parseFloat(btn.dataset.speed);
-      document.querySelectorAll('.speed-pill').forEach((b) => b.classList.toggle('active', b === btn));
-      if (simPlaying) {
-        clearTimeout(simPlayTimer);
-        scheduleSimPlay();
-      }
-    });
+    btn.addEventListener('click', () => setSimSpeed(parseFloat(btn.dataset.speed)));
   });
+  if (btnSpeedCycleEl) {
+    btnSpeedCycleEl.addEventListener('click', () => {
+      const idx = SIM_SPEEDS.indexOf(simViz.speed);
+      const next = SIM_SPEEDS[(idx + 1) % SIM_SPEEDS.length];
+      setSimSpeed(next);
+    });
+  }
 
   window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openSimPanelName) {
+      openSimPanel(null);
+      return;
+    }
     const tag = (document.activeElement && document.activeElement.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (currentTab !== 'sim') return;
@@ -1255,25 +1544,25 @@
     const maxHints = lesson ? lesson.reasoning.length : 0;
 
     el.innerHTML = `
-      <div style="max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-        <div class="page-header" style="margin-bottom:0;">
+      <div class="centered-container practice-shell" style="max-width:860px;">
+        <div class="page-header">
           <div>
             <h1 class="page-title">Luyện câu hỏi biến thể</h1>
-            <p class="page-sub">Chốt đáp án trước khi xem lời giải · Dữ liệu mới được sinh và chấm tự động offline</p>
+            <p class="page-sub">Chốt đáp án trước khi xem lời giải · Dữ liệu mới sinh và chấm tự động offline</p>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-            <select id="pq-type-select" class="select-field" style="max-width:340px;">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;max-width:440px;">
+            <select id="pq-type-select" class="select-field" style="flex:1;min-width:0;">
               <option value="0" ${practiceFilter === 0 ? 'selected' : ''}>Tất cả 32 dạng · trộn ngẫu nhiên</option>
               ${Lessons.map((l) => `<option value="${l.id}" ${practiceFilter === l.id ? 'selected' : ''}>${esc(lessonLabel(l.id))}</option>`).join('')}
             </select>
-            <button id="pq-new-btn" class="btn btn-primary btn-lg">Câu mới</button>
+            <button id="pq-new-btn" type="button" class="btn btn-lg">Câu mới ↻</button>
           </div>
         </div>
 
-        <div class="surface-card" style="padding:24px;display:flex;flex-direction:column;gap:18px;">
+        <div class="surface-card practice-q-card" style="padding:20px;display:flex;flex-direction:column;gap:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
             <span class="brand-pill">${esc(lessonLabel(practiceQ.type))}</span>
-            <span style="font-size:12px;color:var(--text-muted);">Seed #${practiceQ.seed}</span>
+            <span class="font-mono-code" style="font-size:11.5px;color:var(--text-muted);">#${practiceQ.seed}</span>
           </div>
 
           <div style="font-size:15px;font-weight:600;line-height:1.65;white-space:pre-wrap;">${esc(practiceQ.prompt)}</div>
@@ -1288,22 +1577,22 @@
                 cls += ' selected';
               }
               return `
-                <button class="${cls}" data-opt="${idx}" ${practiceChecked ? 'disabled' : ''}>
+                <button type="button" class="${cls}" data-opt="${idx}" ${practiceChecked ? 'disabled' : ''}>
                   <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
                   <span style="white-space:pre-wrap;">${esc(opt)}</span>
                 </button>
               `;
             }).join('')}
           </div>
-
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            <button id="pq-check-btn" class="btn btn-primary btn-lg" ${practiceChecked ? 'disabled' : ''}>Kiểm tra đáp án</button>
-            <button id="pq-hint-btn" class="btn btn-lg" ${practiceChecked || practiceHints >= maxHints ? 'disabled' : ''}>Gợi ý (${practiceHints}/${maxHints})</button>
-            <button id="pq-sim-btn" class="btn btn-lg" style="color:var(--accent);border-color:var(--accent-border);" ${!practiceChecked || (!practiceQ.simPreset && (!practiceQ.trace || !practiceQ.trace.length)) ? 'disabled' : ''}>Xem từng bước ▶</button>
-          </div>
         </div>
 
-        <div id="pq-feedback" class="surface-card" style="padding:20px;display:${practiceChecked || practiceHints > 0 ? 'block' : 'none'};">
+        <div class="practice-actions-bar">
+          <button id="pq-hint-btn" type="button" class="btn btn-lg" ${practiceChecked || practiceHints >= maxHints ? 'disabled' : ''}>Gợi ý (${practiceHints}/${maxHints})</button>
+          <button id="pq-check-btn" type="button" class="btn btn-primary btn-lg" ${practiceChecked ? 'disabled' : ''}>Kiểm tra đáp án</button>
+          <button id="pq-sim-btn" type="button" class="btn btn-lg" style="color:var(--accent);border-color:var(--accent-border);" ${!practiceChecked || (!practiceQ.simPreset && (!practiceQ.trace || !practiceQ.trace.length)) ? 'disabled' : ''}>Xem từng bước ▶</button>
+        </div>
+
+        <div id="pq-feedback" class="surface-card practice-feedback" style="padding:18px 20px;display:${practiceChecked || practiceHints > 0 ? 'block' : 'none'};">
           ${renderPracticeFeedbackHtml()}
         </div>
       </div>
@@ -1392,7 +1681,8 @@
     timer: null,
     setupCount: 29,
     setupMinutes: 30,
-    setupUntimed: false
+    setupUntimed: false,
+    paletteOpen: false
   };
 
   function startExam(count, minutes, untimed) {
@@ -1409,6 +1699,7 @@
     examState.index = 0;
     examState.active = true;
     examState.done = false;
+    examState.paletteOpen = false;
     examState.untimed = untimed;
     examState.startedAt = Date.now();
     examState.deadlineAt = examState.startedAt + minutes * 60000;
@@ -1423,7 +1714,7 @@
     const clockEl = document.getElementById('exam-clock');
     if (!examState.active) return;
     if (examState.untimed) {
-      if (clockEl) clockEl.textContent = `Không giới hạn · ${examState.answers.filter(Boolean).length}/${examState.questions.length} đã chọn`;
+      if (clockEl) clockEl.textContent = `Tự do · ${examState.answers.filter(Boolean).length}/${examState.questions.length}`;
       return;
     }
     const leftMs = examState.deadlineAt - Date.now();
@@ -1434,13 +1725,14 @@
     const totalSec = Math.floor(leftMs / 1000);
     const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
     const ss = String(totalSec % 60).padStart(2, '0');
-    if (clockEl) clockEl.textContent = `⏱ Còn ${mm}:${ss} · ${examState.answers.filter(Boolean).length}/${examState.questions.length} đã chọn`;
+    if (clockEl) clockEl.textContent = `⏱ ${mm}:${ss}`;
   }
 
   function submitExam() {
     if (!examState.active) return;
     examState.active = false;
     examState.done = true;
+    examState.paletteOpen = false;
     if (examState.timer) {
       clearInterval(examState.timer);
       examState.timer = null;
@@ -1461,17 +1753,30 @@
     if (!examState.active && !examState.done) {
       const recent = store.state.exams.slice().reverse().slice(0, 8);
       el.innerHTML = `
-        <div style="max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:18px;">
-          <div class="page-header" style="margin-bottom:0;">
+        <div class="centered-container" style="max-width:760px;">
+          <div class="page-header">
             <div>
               <h1 class="page-title">Thi thử trắc nghiệm</h1>
-              <p class="page-sub">Đề trộn ngẫu nhiên các dạng · Giấu đáp án đến khi nộp bài · Chuyển câu tự do</p>
+              <p class="page-sub">Chọn nhanh cấu hình đề chuẩn hoặc tùy chỉnh số câu &amp; thời gian</p>
             </div>
           </div>
 
-          <div class="surface-card" style="padding:24px;display:flex;flex-direction:column;gap:18px;">
+          <div class="exam-preset-grid">
+            <button type="button" class="surface-card exam-preset-card ${examState.setupCount === 29 && examState.setupMinutes === 30 && !examState.setupUntimed ? 'active' : ''}" data-preset="29-30">
+              <div style="font-size:11.5px;font-weight:700;color:var(--accent);">ĐỀ CHUẨN IUH</div>
+              <div style="font-size:16px;font-weight:700;margin-top:4px;">29 câu · 30 phút</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Phủ đều các dạng thi cuối kì</div>
+            </button>
+            <button type="button" class="surface-card exam-preset-card ${examState.setupCount === 10 && examState.setupMinutes === 10 && !examState.setupUntimed ? 'active' : ''}" data-preset="10-10">
+              <div style="font-size:11.5px;font-weight:700;color:var(--text-soft);">ÔN NHANH</div>
+              <div style="font-size:16px;font-weight:700;margin-top:4px;">10 câu · 10 phút</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Kiểm tra nhanh kiến thức</div>
+            </button>
+          </div>
+
+          <div class="surface-card" style="padding:20px;display:flex;flex-direction:column;gap:16px;">
             <div class="grid-2">
-              <div class="surface-sub" style="padding:16px;">
+              <div class="surface-sub" style="padding:14px;">
                 <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:10px;">
                   <span>Số câu hỏi</span>
                   <span id="ex-cnt-readout" class="font-mono-code" style="color:var(--accent);">${examState.setupCount} câu</span>
@@ -1479,7 +1784,7 @@
                 <input id="ex-cnt-range" type="range" min="5" max="100" value="${examState.setupCount}" class="sim-slider" style="width:100%;" />
               </div>
 
-              <div class="surface-sub" style="padding:16px;">
+              <div class="surface-sub" style="padding:14px;">
                 <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:10px;">
                   <span>Thời gian làm bài</span>
                   <span id="ex-min-readout" class="font-mono-code" style="color:var(--accent);">${examState.setupMinutes} phút</span>
@@ -1494,27 +1799,36 @@
             </label>
 
             <div>
-              <button id="ex-start-btn" class="btn btn-primary btn-lg">Bắt đầu đề mới</button>
+              <button id="ex-start-btn" type="button" class="btn btn-primary btn-lg" style="width:100%;">Bắt đầu đề mới →</button>
             </div>
           </div>
 
-          <div class="surface-card" style="padding:20px;">
-            <strong style="font-size:15px;">Lịch sử thi thử gần đây</strong>
+          <div class="surface-card" style="padding:18px 20px;">
+            <strong style="font-size:14.5px;">Lịch sử thi thử gần đây</strong>
             ${recent.length ? `
-              <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
                 ${recent.map((x) => {
                   const grade = (10 * x.correct / x.total).toFixed(2);
-                  return `<div class="surface-sub" style="padding:10px 14px;display:flex;justify-content:space-between;font-size:13px;">
+                  return `<div class="surface-sub" style="padding:10px 13px;display:flex;justify-content:space-between;font-size:12.5px;">
                     <span>${esc(x.date)}</span>
                     <strong>${x.correct} / ${x.total} đúng · ${grade} / 10</strong>
                   </div>`;
                 }).join('')}
               </div>
-            ` : '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Chưa có bài thi thử nào được nộp.</p>'}
+            ` : '<p style="margin:10px 0 0;font-size:12.5px;color:var(--text-muted);">Chưa có bài thi thử nào được nộp.</p>'}
           </div>
         </div>
       `;
 
+      el.querySelectorAll('[data-preset]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const parts = b.dataset.preset.split('-').map(Number);
+          examState.setupCount = parts[0];
+          examState.setupMinutes = parts[1];
+          examState.setupUntimed = false;
+          renderExam();
+        });
+      });
       document.getElementById('ex-cnt-range').addEventListener('input', (e) => {
         examState.setupCount = parseInt(e.target.value, 10);
         document.getElementById('ex-cnt-readout').textContent = `${examState.setupCount} câu`;
@@ -1534,75 +1848,109 @@
 
     // Active or Review mode
     const q = examState.questions[examState.index];
+    const answeredCount = examState.answers.filter((a) => a !== null).length;
     const score = examState.done ? examState.questions.filter((item, idx) => examState.answers[idx] === item.correct).length : 0;
     const grade = examState.done ? (10 * score / examState.questions.length).toFixed(2) : '';
 
     el.innerHTML = `
-      <div style="max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px;">
-        <div class="surface-card" style="padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
-          <div id="exam-clock" class="font-mono-code" style="font-size:13px;font-weight:700;padding:6px 12px;border-radius:10px;background:${examState.done ? 'var(--emerald-soft)' : 'var(--amber-soft)'};color:${examState.done ? 'var(--emerald-text)' : 'var(--amber-text)'};">
-            ${examState.done ? `Kết quả: ${score} / ${examState.questions.length} đúng · ${grade} / 10` : ''}
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <button id="ex-prev-q" class="btn" ${examState.index === 0 ? 'disabled' : ''}>◀ Câu trước</button>
-            <button id="ex-next-q" class="btn" ${examState.index >= examState.questions.length - 1 ? 'disabled' : ''}>Câu tiếp ▶</button>
-            <button id="ex-submit-btn" class="btn btn-primary">${examState.done ? 'Làm đề mới' : 'Nộp bài'}</button>
-          </div>
-        </div>
-
-        <div class="surface-card" style="padding:14px 18px;">
-          <div class="exam-palette">
-            ${examState.questions.map((item, idx) => {
-              let cls = 'exam-num-btn';
-              if (idx === examState.index) cls += ' current';
-              if (examState.done) cls += examState.answers[idx] === item.correct ? ' ok' : ' bad';
-              else if (examState.answers[idx] !== null) cls += ' answered';
-              return `<button class="${cls}" data-exq="${idx}">${idx + 1}</button>`;
-            }).join('')}
-          </div>
-        </div>
-
-        <div class="surface-card" style="padding:22px;display:flex;flex-direction:column;gap:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <span class="brand-pill">Câu ${examState.index + 1} / ${examState.questions.length} · ${esc(lessonLabel(q.type))}</span>
-          </div>
-          <div style="font-size:15px;font-weight:600;line-height:1.65;white-space:pre-wrap;">${esc(q.prompt)}</div>
-          <div class="options-grid">
-            ${q.options.map((opt, idx) => {
-              let cls = 'option-card';
-              if (examState.done) {
-                if (opt === q.correct) cls += ' correct';
-                else if (examState.answers[examState.index] === opt) cls += ' wrong';
-              } else if (examState.answers[examState.index] === opt) {
-                cls += ' selected';
-              }
-              return `
-                <button class="${cls}" data-exopt="${idx}" ${examState.done ? 'disabled' : ''}>
-                  <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
-                  <span style="white-space:pre-wrap;">${esc(opt)}</span>
-                </button>
-              `;
-            }).join('')}
+      <div class="centered-container" style="max-width:960px;">
+        <div class="surface-card" style="padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div id="exam-clock" class="font-mono-code" style="font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:9px;background:${examState.done ? 'var(--emerald-soft)' : 'var(--amber-soft)'};color:${examState.done ? 'var(--emerald-text)' : 'var(--amber-text)'};">
+            ${examState.done ? `${score}/${examState.questions.length} · ${grade}đ` : ''}
           </div>
 
-          ${examState.done ? `
-            <div class="surface-sub" style="padding:14px 16px;font-size:13px;line-height:1.65;white-space:pre-wrap;">
-              <strong>Đáp án đúng: ${esc(q.correct)}</strong>\n\n${esc(q.explanation)}
+          <button id="ex-palette-trigger" type="button" class="btn exam-palette-trigger">
+            Câu ${examState.index + 1}/${examState.questions.length} (${answeredCount} đã chọn) ▾
+          </button>
+
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="exam-desktop-header-btns" style="display:flex;gap:6px;">
+              <button id="ex-prev-q" type="button" class="btn" ${examState.index === 0 ? 'disabled' : ''}>◀ Câu trước</button>
+              <button id="ex-next-q" type="button" class="btn" ${examState.index >= examState.questions.length - 1 ? 'disabled' : ''}>Câu tiếp ▶</button>
             </div>
-          ` : ''}
+            <button id="ex-submit-btn" type="button" class="btn btn-primary">${examState.done ? 'Đề mới' : 'Nộp bài'}</button>
+          </div>
+        </div>
+
+        <div id="exam-sheet-backdrop" class="overlay-backdrop ${examState.paletteOpen ? 'open' : ''}"></div>
+
+        <div class="exam-active-grid">
+          <div class="surface-card" style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span class="brand-pill">Câu ${examState.index + 1} / ${examState.questions.length} · ${esc(lessonLabel(q.type))}</span>
+              <span class="hide-xs" style="font-size:12px;color:var(--text-muted);">Đã chọn ${answeredCount}/${examState.questions.length}</span>
+            </div>
+            <div style="font-size:15px;font-weight:600;line-height:1.65;white-space:pre-wrap;">${esc(q.prompt)}</div>
+            <div class="options-grid">
+              ${q.options.map((opt, idx) => {
+                let cls = 'option-card';
+                if (examState.done) {
+                  if (opt === q.correct) cls += ' correct';
+                  else if (examState.answers[examState.index] === opt) cls += ' wrong';
+                } else if (examState.answers[examState.index] === opt) {
+                  cls += ' selected';
+                }
+                return `
+                  <button type="button" class="${cls}" data-exopt="${idx}" ${examState.done ? 'disabled' : ''}>
+                    <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
+                    <span style="white-space:pre-wrap;">${esc(opt)}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+
+            ${examState.done ? `
+              <div class="surface-sub" style="padding:14px 16px;font-size:13px;line-height:1.65;white-space:pre-wrap;">
+                <strong>Đáp án đúng: ${esc(q.correct)}</strong>\n\n${esc(q.explanation)}
+              </div>
+            ` : ''}
+          </div>
+
+          <div id="exam-palette-panel" class="surface-card exam-palette-panel ${examState.paletteOpen ? 'sheet-open' : ''}" style="padding:14px 16px;">
+            <div class="exam-sheet-head">
+              <strong style="font-size:14px;">Danh sách ${examState.questions.length} câu hỏi</strong>
+              <button id="ex-palette-close" type="button" class="btn btn-ghost" style="padding:4px 8px;">✕ Đóng</button>
+            </div>
+            <div class="hide-xs" style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">Bảng câu hỏi</div>
+            <div class="exam-palette">
+              ${examState.questions.map((item, idx) => {
+                let cls = 'exam-num-btn';
+                if (idx === examState.index) cls += ' current';
+                if (examState.done) cls += examState.answers[idx] === item.correct ? ' ok' : ' bad';
+                else if (examState.answers[idx] !== null) cls += ' answered';
+                return `<button type="button" class="${cls}" data-exq="${idx}">${idx + 1}</button>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-mobile-footer">
+          <button id="ex-prev-q-mob" type="button" class="btn btn-lg" ${examState.index === 0 ? 'disabled' : ''}>◀ Câu trước</button>
+          <button id="ex-next-q-mob" type="button" class="btn btn-primary btn-lg" ${examState.index >= examState.questions.length - 1 ? 'disabled' : ''}>Câu tiếp ▶</button>
         </div>
       </div>
     `;
 
     if (!examState.done) tickExamClock();
-    document.getElementById('ex-prev-q').addEventListener('click', () => {
-      examState.index = Math.max(0, examState.index - 1);
-      renderExam();
-    });
-    document.getElementById('ex-next-q').addEventListener('click', () => {
-      examState.index = Math.min(examState.questions.length - 1, examState.index + 1);
-      renderExam();
-    });
+
+    const goPrevQ = () => { examState.index = Math.max(0, examState.index - 1); renderExam(); };
+    const goNextQ = () => { examState.index = Math.min(examState.questions.length - 1, examState.index + 1); renderExam(); };
+    document.getElementById('ex-prev-q').addEventListener('click', goPrevQ);
+    document.getElementById('ex-next-q').addEventListener('click', goNextQ);
+    document.getElementById('ex-prev-q-mob').addEventListener('click', goPrevQ);
+    document.getElementById('ex-next-q-mob').addEventListener('click', goNextQ);
+
+    const openPalette = (open) => {
+      examState.paletteOpen = open;
+      const p = document.getElementById('exam-palette-panel');
+      const bd = document.getElementById('exam-sheet-backdrop');
+      if (p) p.classList.toggle('sheet-open', open);
+      if (bd) bd.classList.toggle('open', open);
+    };
+    document.getElementById('ex-palette-trigger').addEventListener('click', () => openPalette(!examState.paletteOpen));
+    document.getElementById('ex-palette-close').addEventListener('click', () => openPalette(false));
+    document.getElementById('exam-sheet-backdrop').addEventListener('click', () => openPalette(false));
+
     document.getElementById('ex-submit-btn').addEventListener('click', () => {
       if (examState.done) {
         examState.done = false;
@@ -1615,6 +1963,7 @@
     el.querySelectorAll('[data-exq]').forEach((b) => {
       b.addEventListener('click', () => {
         examState.index = parseInt(b.dataset.exq, 10);
+        examState.paletteOpen = false;
         renderExam();
       });
     });
@@ -1698,6 +2047,7 @@
   const params = new URLSearchParams(window.location.search);
   const urlTheme = params.get('theme');
   applyTheme(urlTheme || store.state.theme, !urlTheme);
+  applySidebarPinned(store.getPref('sidebarPinned'), false);
 
   const urlMode = params.get('mode');
   const urlArr = params.get('arr');
@@ -1730,6 +2080,7 @@
     goSimStep,
     selectLesson: (id) => {
       selectedLessonId = id;
+      selectedLessonSubTab = 'overview';
       renderLessonList();
       renderLessonDetail();
     },

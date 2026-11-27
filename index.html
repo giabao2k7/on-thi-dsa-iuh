@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>DSA Studio IUH — Ôn Thi Trắc Nghiệm &amp; Mô Phỏng CTDL&amp;GT 60fps</title>
   <meta name="description" content="Ứng dụng ôn thi trắc nghiệm Cấu trúc dữ liệu và giải thuật (DSA / CTDL&amp;GT) dành cho sinh viên IT IUH: 32 dạng bài theo slide IUH, 12 chế độ mô phỏng 60fps mượt mà, luyện biến thể và thi thử." />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2314b8a6'/%3E%3Cstop offset='100%25' stop-color='%230284c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='8' r='3' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='9' cy='23' r='3' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='23' cy='23' r='3' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Cpath d='M14 10.6L10.4 20.2M18 10.6L21.6 20.2' stroke='%23fff' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E" />
@@ -10,12 +10,12 @@
 </head>
 <body>
   <div id="app" data-theme="dark">
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="sidebar">
-      <div>
+    <!-- DESKTOP HOVER-TO-EXPAND RAIL SIDEBAR -->
+    <aside id="sidebar" class="sidebar" aria-label="Điều hướng chính">
+      <div class="sidebar-top">
         <div class="brand-box">
           <div class="brand-logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="5" r="2.5"></circle>
               <circle cx="6" cy="17" r="2.5"></circle>
               <circle cx="18" cy="17" r="2.5"></circle>
@@ -23,47 +23,53 @@
               <path d="M13.6 7.1 16.6 14.8"></path>
             </svg>
           </div>
-          <div>
+          <div class="brand-text">
             <div class="brand-title">DSA Studio</div>
             <span class="brand-pill">IUH · 32 dạng</span>
           </div>
+          <button id="sidebar-pin-btn" type="button" class="sidebar-pin-btn" title="Ghim / Bỏ ghim thanh bên" aria-label="Ghim thanh bên">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 17v5"></path>
+              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"></path>
+            </svg>
+          </button>
         </div>
 
         <nav id="sidebar-nav" class="sidebar-nav">
-          <button data-tab="home" class="nav-btn active">
+          <button type="button" data-tab="home" class="nav-btn active" title="Tổng quan">
             <span class="nav-btn-inner">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
-              <span>Tổng quan</span>
+              <span class="nav-label">Tổng quan</span>
             </span>
           </button>
-          <button data-tab="lessons" class="nav-btn">
+          <button type="button" data-tab="lessons" class="nav-btn" title="Học 32 dạng">
             <span class="nav-btn-inner">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
-              <span>Học 32 dạng</span>
+              <span class="nav-label">Học 32 dạng</span>
             </span>
           </button>
-          <button data-tab="sim" class="nav-btn">
+          <button type="button" data-tab="sim" class="nav-btn" title="Mô phỏng 60fps">
             <span class="nav-btn-inner">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              <span>Mô phỏng 60fps</span>
+              <span class="nav-label">Mô phỏng 60fps</span>
             </span>
           </button>
-          <button data-tab="practice" class="nav-btn">
+          <button type="button" data-tab="practice" class="nav-btn" title="Luyện biến thể">
             <span class="nav-btn-inner">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-              <span>Luyện biến thể</span>
+              <span class="nav-label">Luyện biến thể</span>
             </span>
           </button>
-          <button data-tab="exam" class="nav-btn">
+          <button type="button" data-tab="exam" class="nav-btn" title="Thi thử">
             <span class="nav-btn-inner">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              <span>Thi thử</span>
+              <span class="nav-label">Thi thử</span>
             </span>
           </button>
-          <button data-tab="mistakes" class="nav-btn">
+          <button type="button" data-tab="mistakes" class="nav-btn" title="Sổ câu sai">
             <span class="nav-btn-inner">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-              <span>Sổ câu sai</span>
+              <span class="nav-label">Sổ câu sai</span>
             </span>
             <span id="nav-mistake-count" class="nav-badge" style="display:none;">0</span>
           </button>
@@ -71,20 +77,20 @@
       </div>
 
       <div class="sidebar-footer">
-        <button id="theme-toggle" type="button" class="theme-btn">
-          <span style="display:flex;align-items:center;gap:8px;">
-            <span id="theme-icon" style="display:flex;align-items:center;"></span>
-            <span id="theme-label">Giao diện Tối</span>
+        <button id="theme-toggle" type="button" class="theme-btn" title="Đổi giao diện Sáng / Tối">
+          <span class="theme-btn-left">
+            <span id="theme-icon" class="theme-icon-wrap"></span>
+            <span id="theme-label" class="theme-label-text">Giao diện Tối</span>
           </span>
           <span class="theme-switch">
             <span id="theme-knob" class="theme-knob" style="transform:translateX(18px);"></span>
           </span>
         </button>
 
-        <div class="meta-box">
+        <div class="meta-box sidebar-meta">
           <div style="display:flex;align-items:center;justify-content:space-between;font-weight:600;color:var(--text-soft);">
-            <span>100% Offline & Web</span>
-            <span style="width:8px;height:8px;border-radius:999px;background:#10b981;"></span>
+            <span>100% Offline &amp; Web</span>
+            <span style="width:7px;height:7px;border-radius:999px;background:#10b981;"></span>
           </div>
           <div style="margin-top:4px;">Ôn thi CTDL&amp;GT · ĐH Công nghiệp TP.HCM</div>
           <div style="margin-top:4px;">
@@ -94,98 +100,173 @@
       </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- MAIN WORKSPACE -->
     <div class="main-area">
-      <!-- Mobile Header -->
-      <div class="mobile-bar">
-        <button id="mobile-menu-btn" class="btn">☰ Menu</button>
-        <strong style="font-size:15px;">DSA Studio IUH</strong>
-        <button id="mobile-sim-btn" class="btn btn-primary">Mô phỏng</button>
-      </div>
+      <!-- MOBILE COMPACT TOP BAR (shown <= 768px) -->
+      <header class="mobile-topbar">
+        <div class="mobile-topbar-left">
+          <div class="brand-logo brand-logo-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="5" r="2.5"></circle>
+              <circle cx="6" cy="17" r="2.5"></circle>
+              <circle cx="18" cy="17" r="2.5"></circle>
+              <path d="M10.4 7.1 7.4 14.8"></path>
+              <path d="M13.6 7.1 16.6 14.8"></path>
+            </svg>
+          </div>
+          <strong id="mobile-page-title" class="mobile-page-title">Tổng quan</strong>
+        </div>
+        <div class="mobile-topbar-right">
+          <button id="mobile-mistakes-btn" type="button" class="mob-icon-pill" title="Mở Sổ câu sai">
+            <span>⚠</span>
+            <span id="mobile-mistake-count">0</span>
+          </button>
+          <button id="mobile-theme-btn" type="button" class="mob-icon-btn" aria-label="Đổi giao diện Sáng / Tối"></button>
+        </div>
+      </header>
 
       <!-- TAB 1: HOME -->
       <section id="tab-home" class="tab-panel active"></section>
 
-      <!-- TAB 2: LESSONS (32 TYPES) -->
+      <!-- TAB 2: LESSONS (32 TYPES · MASTER-DETAIL) -->
       <section id="tab-lessons" class="tab-panel lessons-layout">
         <div class="lessons-sidebar">
-          <input id="lesson-search" type="text" class="input-field" placeholder="Tìm tên dạng, chương, số (1–32)..." />
-          <select id="lesson-group" class="select-field"></select>
+          <input id="lesson-search" type="text" class="input-field" placeholder="Tìm dạng bài (1–32)..." />
+          <div id="lesson-chapter-chips" class="chapter-chips"></div>
           <div id="lesson-list" class="lessons-list"></div>
         </div>
         <div id="lesson-detail" class="lessons-content"></div>
       </section>
 
-      <!-- TAB 3: SIMULATOR (12 MODES, 60FPS) -->
+      <!-- TAB 3: SIMULATOR (12 MODES, CANVAS-FIRST 60FPS) -->
       <section id="tab-sim" class="tab-panel sim-layout">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;">
-          <div>
-            <h1 class="page-title" style="font-size:20px;">Mô phỏng từng bước 60fps (12 chế độ)</h1>
-            <p id="sim-help" class="page-sub">Nhập 1–12 số nguyên, bấm Tiếp / Lùi hoặc phím mũi tên ← / → / Space.</p>
-          </div>
-          <div id="sim-modes" class="pill-group"></div>
-        </div>
+        <div class="sim-topbar-wrap">
+          <div class="surface-card sim-topbar">
+            <div class="sim-topbar-left">
+              <button id="sim-mode-trigger" type="button" class="btn sim-mode-trigger">
+                <span class="mode-dot"></span>
+                <span id="sim-mode-label">Cây AVL (Xoay)</span>
+                <span class="caret">▾</span>
+              </button>
 
-        <div class="surface-card sim-toolbar">
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;min-width:240px;">
-            <label for="sim-input" style="font-size:12px;font-weight:700;color:var(--text-muted);">Dữ liệu:</label>
-            <input id="sim-input" type="text" class="input-field font-mono-code" style="flex:1;min-width:160px;max-width:360px;" />
-            <div id="sim-key-wrap" style="display:none;align-items:center;gap:6px;">
-              <label id="sim-key-label" for="sim-key" style="font-size:12px;font-weight:700;color:var(--text-muted);">Khóa:</label>
-              <input id="sim-key" type="text" class="input-field font-mono-code" style="width:74px;text-align:center;" />
+              <button id="sim-data-trigger" type="button" class="sim-data-chip" title="Chỉnh sửa dữ liệu đầu vào">
+                <span id="sim-data-summary" class="font-mono-code sim-data-summary">30, 10, 20, 40, 50</span>
+                <span id="sim-key-chip" class="key-chip" style="display:none;"></span>
+                <span class="chip-edit">✎</span>
+              </button>
+
+              <button id="sim-random-quick" type="button" class="btn btn-ghost desktop-only-btn" title="Sinh dữ liệu ngẫu nhiên">
+                🎲 <span class="hide-md">Ngẫu nhiên</span>
+              </button>
             </div>
-            <button id="sim-apply" class="btn btn-primary">Áp dụng</button>
-            <button id="sim-random" class="btn">Ngẫu nhiên</button>
-            <span id="sim-error" style="display:none;font-size:12px;font-weight:600;color:var(--rose-text);"></span>
+
+            <div class="sim-topbar-right">
+              <span id="sim-opt-badge" class="opt-status-badge" style="display:none;"></span>
+              <button id="sim-opts-trigger" type="button" class="btn" title="Tùy chọn chuẩn IUH &amp; Chú giải">
+                ⚙ <span class="hide-xs">Tùy chọn</span>
+              </button>
+            </div>
           </div>
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:12px;color:var(--text-muted);">
-            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#f59e0b;"></span>Đang xét</span>
-            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#f43f5e;"></span>Hoán đổi / Mất cân bằng</span>
-            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#10b981;"></span>Xong / Cân bằng</span>
+
+          <div id="sim-overlay-backdrop" class="overlay-backdrop"></div>
+
+          <!-- Mode Picker Popover / Mobile Bottom Sheet -->
+          <div id="sim-mode-panel" class="surface-card sim-popover sim-popover-left" role="dialog" aria-label="Chọn chế độ mô phỏng">
+            <div class="sim-pop-head">
+              <strong>Chọn chế độ mô phỏng (12)</strong>
+              <button type="button" class="btn btn-ghost pop-close-btn" data-close-pop>✕</button>
+            </div>
+            <div id="sim-modes" class="sim-modes-groups"></div>
+            <p id="sim-help" class="sim-pop-help"></p>
+          </div>
+
+          <!-- Data Editor Popover / Mobile Bottom Sheet -->
+          <div id="sim-data-panel" class="surface-card sim-popover sim-popover-mid" role="dialog" aria-label="Chỉnh sửa dữ liệu">
+            <div class="sim-pop-head">
+              <strong>Chỉnh sửa dữ liệu mô phỏng</strong>
+              <button type="button" class="btn btn-ghost pop-close-btn" data-close-pop>✕</button>
+            </div>
+            <div class="sim-data-form">
+              <label for="sim-input" class="ctx-label">Dãy dữ liệu đầu vào (1–12 phần tử):</label>
+              <input id="sim-input" type="text" class="input-field font-mono-code" />
+              <div id="sim-key-wrap" class="sim-key-row" style="display:none;">
+                <label id="sim-key-label" for="sim-key" class="ctx-label">Khóa:</label>
+                <input id="sim-key" type="text" class="input-field font-mono-code" style="width:96px;text-align:center;" />
+              </div>
+              <span id="sim-error" style="display:none;font-size:12px;font-weight:600;color:var(--rose-text);"></span>
+              <div class="sim-data-actions">
+                <button id="sim-apply" type="button" class="btn btn-primary" style="flex:1;">Áp dụng dữ liệu</button>
+                <button id="sim-random" type="button" class="btn">🎲 Ngẫu nhiên</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Options & Legend Popover / Mobile Bottom Sheet -->
+          <div id="sim-opts-panel" class="surface-card sim-popover sim-popover-right" role="dialog" aria-label="Tùy chọn và chú giải">
+            <div class="sim-pop-head">
+              <strong>Tùy chọn chuẩn IUH &amp; Chú giải</strong>
+              <button type="button" class="btn btn-ghost pop-close-btn" data-close-pop>✕</button>
+            </div>
+            <div id="sim-opts-body" class="sim-opts-body"></div>
+            <div class="sim-legend-box">
+              <div class="ctx-label" style="margin-bottom:8px;">Chú giải màu trạng thái</div>
+              <div class="sim-legend-items">
+                <span><span class="leg-dot" style="background:#f59e0b;"></span>Đang xét / So sánh</span>
+                <span><span class="leg-dot" style="background:#f43f5e;"></span>Hoán đổi / Mất cân bằng / Xóa</span>
+                <span><span class="leg-dot" style="background:#10b981;"></span>Xong / Đã cân bằng</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div id="sim-ctx-bar" class="surface-card sim-ctx-bar" style="display:none;"></div>
-
+        <!-- CANVAS STAGE -->
         <div class="surface-card sim-stage">
           <div class="sim-stage-head">
-            <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-              <span id="step-badge" class="font-mono-code" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent);flex-shrink:0;">Bước 1 / 1</span>
-              <strong id="step-title" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Khởi tạo</strong>
+            <div class="sim-stage-title-wrap">
+              <span id="step-badge" class="font-mono-code step-badge">Bước 1 / 1</span>
+              <strong id="step-title" class="step-title">Khởi tạo</strong>
             </div>
-            <div id="step-vars" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            <div id="step-vars" class="step-vars"></div>
           </div>
 
           <div id="canvas-wrap" class="canvas-wrap">
             <canvas id="sim-canvas"></canvas>
+            <div id="sim-delete-float" class="sim-delete-float" style="display:none;"></div>
           </div>
 
           <div class="sim-stage-foot">
-            <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-              <span style="width:8px;height:8px;border-radius:999px;background:var(--accent);flex-shrink:0;"></span>
-              <span id="step-note" style="font-size:13px;color:var(--text-soft);"></span>
+            <div class="sim-note-wrap">
+              <span class="note-dot"></span>
+              <span id="step-note" class="step-note"></span>
             </div>
-            <span style="font-size:12px;color:var(--text-muted);flex-shrink:0;">Phím tắt: ← Lùi · → Tiếp · Space Chạy</span>
+            <span class="sim-kbd-hint">← Lùi · → Tiếp · Space Chạy</span>
           </div>
         </div>
 
+        <!-- PLAYBACK DOCK -->
         <div class="surface-card sim-controls">
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
-            <button id="btn-first" class="btn">|◀ Đầu</button>
-            <button id="btn-prev" class="btn">◀ Lùi</button>
-            <button id="btn-play" class="btn btn-primary">▶ Tự chạy</button>
-            <button id="btn-next" class="btn">Tiếp ▶</button>
-            <button id="btn-last" class="btn">Cuối ▶|</button>
+          <div class="sim-slider-wrap">
+            <input id="step-slider" type="range" min="0" max="0" value="0" class="sim-slider" />
           </div>
-          <div style="flex:1;min-width:160px;max-width:420px;display:flex;align-items:center;">
-            <input id="step-slider" type="range" min="0" max="0" value="0" class="sim-slider" style="width:100%;" />
-          </div>
-          <div class="pill-group" style="padding:3px;">
-            <span style="font-size:12px;color:var(--text-muted);padding:5px 8px;font-weight:600;">Tốc độ</span>
-            <button data-speed="0.5" class="pill-btn speed-pill">0.5x</button>
-            <button data-speed="1" class="pill-btn speed-pill active">1x</button>
-            <button data-speed="1.5" class="pill-btn speed-pill">1.5x</button>
-            <button data-speed="2" class="pill-btn speed-pill">2x</button>
+          <div class="sim-controls-row">
+            <button id="btn-speed-cycle" type="button" class="btn btn-ghost mobile-only-btn font-mono-code" title="Đổi tốc độ phát">1x</button>
+
+            <div class="sim-transport">
+              <button id="btn-first" type="button" class="btn btn-ghost desktop-only-btn" title="Bước đầu">|◀</button>
+              <button id="btn-prev" type="button" class="btn">◀ <span class="hide-xs">Lùi</span></button>
+              <button id="btn-play" type="button" class="btn btn-primary">▶ Tự chạy</button>
+              <button id="btn-next" type="button" class="btn"><span class="hide-xs">Tiếp</span> ▶</button>
+              <button id="btn-last" type="button" class="btn btn-ghost desktop-only-btn" title="Bước cuối">▶|</button>
+            </div>
+
+            <button id="sim-random-mob" type="button" class="btn btn-ghost mobile-only-btn" title="Dữ liệu ngẫu nhiên">🎲</button>
+
+            <div class="seg-group sim-speed-seg">
+              <button type="button" data-speed="0.5" class="seg-btn speed-pill">0.5x</button>
+              <button type="button" data-speed="1" class="seg-btn speed-pill active">1x</button>
+              <button type="button" data-speed="1.5" class="seg-btn speed-pill">1.5x</button>
+              <button type="button" data-speed="2" class="seg-btn speed-pill">2x</button>
+            </div>
           </div>
         </div>
       </section>
@@ -199,14 +280,38 @@
       <!-- TAB 6: MISTAKE BOOK -->
       <section id="tab-mistakes" class="tab-panel"></section>
     </div>
+
+    <!-- MOBILE BOTTOM TAB BAR (shown <= 768px) -->
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="Điều hướng nhanh">
+      <button type="button" data-tab="home" class="mnav-btn active">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
+        <span>Tổng quan</span>
+      </button>
+      <button type="button" data-tab="lessons" class="mnav-btn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+        <span>Học</span>
+      </button>
+      <button type="button" data-tab="sim" class="mnav-btn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <span>Mô phỏng</span>
+      </button>
+      <button type="button" data-tab="practice" class="mnav-btn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        <span>Luyện</span>
+      </button>
+      <button type="button" data-tab="exam" class="mnav-btn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span>Thi thử</span>
+      </button>
+    </nav>
   </div>
 
   <!-- TRACE MODAL (for custom traces like Linear Search or Lesson diagrams) -->
   <div id="trace-modal" class="modal-backdrop">
     <div class="surface-card modal-box">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <strong id="modal-title" style="font-size:15px;">Mô phỏng lời giải</strong>
-        <button id="modal-close" class="btn">✕ Đóng</button>
+        <button id="modal-close" type="button" class="btn">✕ Đóng</button>
       </div>
       <div id="modal-canvas-wrap" class="canvas-wrap" style="border-radius:12px;border:1px solid var(--border-subtle);">
         <canvas id="modal-canvas"></canvas>
@@ -214,8 +319,8 @@
       <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
         <span id="modal-note" style="font-size:13px;color:var(--text-soft);"></span>
         <div style="display:flex;gap:6px;">
-          <button id="modal-prev" class="btn">◀ Lùi</button>
-          <button id="modal-next" class="btn btn-primary">Tiếp ▶</button>
+          <button id="modal-prev" type="button" class="btn">◀ Lùi</button>
+          <button id="modal-next" type="button" class="btn btn-primary">Tiếp ▶</button>
         </div>
       </div>
     </div>

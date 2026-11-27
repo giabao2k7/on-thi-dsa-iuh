@@ -251,8 +251,15 @@
     _computeArrayLayout(step, W, H) {
       const slots = step.slots || (step.values || []).map((v, i) => ({ uid: i + 1, val: v }));
       const n = slots.length;
-      const tileW = Math.min(68, Math.max(40, Math.floor((W - 96) / Math.max(n, 1)) - 12));
-      const gap = Math.min(18, Math.max(7, Math.floor(tileW * 0.24)));
+      const isNarrow = W < 520;
+      const pad = isNarrow ? 24 : 96;
+      const gap = isNarrow
+        ? Math.min(10, Math.max(4, Math.floor(W / Math.max(n * 8, 1))))
+        : Math.min(18, Math.max(7, Math.floor(Math.min(68, Math.max(40, Math.floor((W - pad) / Math.max(n, 1)) - 12)) * 0.24)));
+      const tileW = isNarrow
+        ? Math.min(54, Math.max(24, Math.floor((W - pad - Math.max(0, n - 1) * gap) / Math.max(n, 1))))
+        : Math.min(68, Math.max(40, Math.floor((W - pad) / Math.max(n, 1)) - 12));
+      const tileH = isNarrow ? Math.min(54, Math.max(40, tileW + 8)) : 58;
       const stepX = tileW + gap;
       const totalW = n * tileW + Math.max(0, n - 1) * gap;
       const startX = (W - totalW) / 2;
@@ -310,29 +317,30 @@
         });
       }
 
-      return { n, tileW, tileH: 58, stepX, startX, baseY, heldY, tiles, pointers };
+      return { n, tileW, tileH, stepX, startX, baseY, heldY, tiles, pointers };
     }
 
     _drawArray(fromStep, toStep, rawT, singleStepDiff, W, H, pal) {
       const ctx = this.ctx;
       const t = easeInOutCubic(rawT);
+      const isNarrow = W < 520;
       const fromL = this._computeArrayLayout(fromStep, W, H);
       const toL = this._computeArrayLayout(toStep, W, H);
 
       ctx.save();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
       const headerLabel = this.mode === 'insertion'
-        ? 'VÙNG GIỮ TẠM (x)  &  MẢNG CHÍNH (chỉ số từ 0)'
+        ? (isNarrow ? 'BIẾN TẠM x & MẢNG' : 'VÙNG GIỮ TẠM (x)  &  MẢNG CHÍNH (chỉ số từ 0)')
         : (toStep.kind === 'binary'
-          ? 'TÌM KIẾM NHỊ PHÂN • VÙNG [left .. right] THU HẸP MƯỢT'
+          ? (isNarrow ? 'TÌM NHỊ PHÂN [left .. right]' : 'TÌM KIẾM NHỊ PHÂN • VÙNG [left .. right] THU HẸP MƯỢT')
           : (toStep.kind === 'quick'
-            ? 'QUICK SORT (SLIDE IUH) • CHỌN MỐC GIỮA x = a[(left+right)/2] & PHÂN HOẠCH'
-            : 'MẢNG • CHỈ SỐ TỪ 0'));
-      ctx.fillText(headerLabel, 24, 28);
+            ? (isNarrow ? 'QUICK SORT (IUH)' : 'QUICK SORT (SLIDE IUH) • CHỌN MỐC GIỮA x = a[(left+right)/2] & PHÂN HOẠCH')
+            : (isNarrow ? 'MẢNG (chỉ số 0)' : 'MẢNG • CHỈ SỐ TỪ 0')));
+      ctx.fillText(headerLabel, isNarrow ? 14 : 24, isNarrow ? 24 : 28);
       if (toStep.kind === 'quick' && toStep.pivotVal !== null && toStep.pivotVal !== undefined) {
-        drawPill(ctx, `Mốc x = ${toStep.pivotVal}`, W - 80, 26, pal.compareBg, pal.compareBorder, pal.compareText, 12);
+        drawPill(ctx, `Mốc x = ${toStep.pivotVal}`, isNarrow ? W - 56 : W - 80, isNarrow ? 22 : 26, pal.compareBg, pal.compareBorder, pal.compareText, isNarrow ? 11 : 12);
       }
       ctx.restore();
 
@@ -481,7 +489,8 @@
       ctx.stroke();
 
       ctx.fillStyle = fg;
-      ctx.font = '700 17px "Segoe UI", sans-serif';
+      const tileFontSz = w < 36 ? 13 : (w < 46 ? 15 : 17);
+      ctx.font = `700 ${tileFontSz}px "Segoe UI", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(val), 0, 1);
@@ -523,21 +532,28 @@
     _drawLinked(fromStep, toStep, rawT, singleStepDiff, W, H, pal) {
       const ctx = this.ctx;
       const t = easeInOutCubic(rawT);
+      const isNarrow = W < 520;
       const slots = toStep.slots || [];
       const n = slots.length;
-      const nodeW = Math.min(72, Math.max(46, Math.floor((W - 160) / Math.max(n, 1)) - 26));
-      const arrowGap = Math.min(32, Math.max(18, Math.floor(nodeW * 0.42)));
+      const nodeW = isNarrow
+        ? Math.min(46, Math.max(26, Math.floor((W - 92) / Math.max(n, 1)) - 12))
+        : Math.min(72, Math.max(46, Math.floor((W - 160) / Math.max(n, 1)) - 26));
+      const arrowGap = isNarrow
+        ? Math.max(10, Math.floor(nodeW * 0.34))
+        : Math.min(32, Math.max(18, Math.floor(nodeW * 0.42)));
       const stepX = nodeW + arrowGap;
       const totalW = n * nodeW + Math.max(0, n - 1) * arrowGap;
-      const startX = Math.max(74, (W - totalW) / 2);
+      const startX = isNarrow
+        ? Math.max(52, (W - totalW - 14) / 2)
+        : Math.max(74, (W - totalW) / 2);
       const baseY = Math.round(H * 0.46);
-      const nodeH = 54;
+      const nodeH = isNarrow ? 46 : 54;
 
       ctx.save();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
-      ctx.fillText('DANH SÁCH LIÊN KẾT ĐƠN • ĐỔI DỮ LIỆU TỪNG CẶP (KHÔNG ĐỔI NEXT)', 24, 28);
+      ctx.fillText(isNarrow ? 'DSLK ĐƠN • ĐỔI DATA TỪNG CẶP' : 'DANH SÁCH LIÊN KẾT ĐƠN • ĐỔI DỮ LIỆU TỪNG CẶP (KHÔNG ĐỔI NEXT)', isNarrow ? 14 : 24, isNarrow ? 24 : 28);
       ctx.restore();
 
       const buildMap = (st) => {
@@ -646,30 +662,36 @@
     // ---------------------------------------------------------
     _computeStackLayout(step, W, H) {
       const stepItems = step.items || [];
+      const isNarrow = W < 520;
       const maxVisible = Math.max(6, stepItems.length + 1);
-      const boxW = Math.min(164, Math.max(118, Math.round(W * 0.19)));
-      const itemH = Math.min(44, Math.floor((H - 120) / maxVisible));
-      const gap = 7;
-      const cx = Math.max(Math.round(boxW / 2) + 34, Math.round(W * 0.22));
+      const boxW = isNarrow
+        ? Math.min(116, Math.max(80, Math.round(W * 0.27)))
+        : Math.min(164, Math.max(118, Math.round(W * 0.19)));
+      const itemH = Math.min(isNarrow ? 34 : 44, Math.floor((H - (isNarrow ? 105 : 120)) / maxVisible));
+      const gap = isNarrow ? 5 : 7;
+      const cx = isNarrow
+        ? Math.max(Math.round(boxW / 2) + 12, Math.round(W * 0.18))
+        : Math.max(Math.round(boxW / 2) + 34, Math.round(W * 0.22));
       const bucketRight = cx + boxW / 2;
-      const tapeW = W < 580 ? 132 : 152;
-      const popZoneLeft = bucketRight + 78;
-      const tapeX = Math.max(popZoneLeft + 104, W - tapeW - 24);
-      const popZoneRight = tapeX - 20;
-      const popW = Math.min(boxW - 20, Math.max(76, popZoneRight - popZoneLeft));
+      const tapeW = isNarrow ? Math.min(116, Math.max(92, Math.round(W * 0.30))) : (W < 580 ? 132 : 152);
+      const popZoneLeft = bucketRight + (isNarrow ? 44 : 78);
+      const tapeX = isNarrow ? (W - tapeW - 10) : Math.max(popZoneLeft + 104, W - tapeW - 24);
+      const popZoneRight = tapeX - (isNarrow ? 8 : 20);
+      const popW = Math.min(boxW - (isNarrow ? 14 : 20), Math.max(isNarrow ? 52 : 76, popZoneRight - popZoneLeft));
       const popX = Math.round((popZoneLeft + popZoneRight - popW) / 2);
-      const bottomY = H - 52;
+      const bottomY = H - (isNarrow ? 36 : 52);
       const topEntranceY = 46;
 
+      const innerPad = isNarrow ? 14 : 22;
       const items = {};
       stepItems.forEach((it, i) => {
         const y = bottomY - (i + 1) * itemH - i * gap;
         items[it.uid] = {
           uid: it.uid,
           val: it.val,
-          x: cx - (boxW - 22) / 2,
+          x: cx - (boxW - innerPad) / 2,
           y,
-          w: boxW - 22,
+          w: boxW - innerPad,
           h: itemH,
           isTop: i === stepItems.length - 1
         };
@@ -686,37 +708,38 @@
           h: itemH
         };
       }
-      return { cx, boxW, bucketRight, tapeX, tapeW, popX, popW, bottomY, itemH, topEntranceY, items, poppedPose };
+      return { cx, boxW, innerPad, bucketRight, tapeX, tapeW, popX, popW, bottomY, itemH, topEntranceY, items, poppedPose };
     }
 
     _drawStack(fromStep, toStep, rawT, W, H, pal) {
       const ctx = this.ctx;
       const t = easeInOutCubic(rawT);
+      const isNarrow = W < 520;
       const fromL = this._computeStackLayout(fromStep, W, H);
       const toL = this._computeStackLayout(toStep, W, H);
 
       ctx.save();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
-      ctx.fillText('STACK (LIFO) · VÀO TRÊN / RA TRÊN (BOTTOM → TOP)', 24, 28);
-      ctx.fillText('CHUỖI THAO TÁC', toL.tapeX, 58);
+      ctx.fillText(isNarrow ? 'STACK (LIFO)' : 'STACK (LIFO) · VÀO TRÊN / RA TRÊN (BOTTOM → TOP)', isNarrow ? 14 : 24, isNarrow ? 24 : 28);
+      ctx.fillText(isNarrow ? 'THAO TÁC' : 'CHUỖI THAO TÁC', toL.tapeX, 58);
       (toStep.tokens || []).forEach((tok, idx) => {
-        const ty = 82 + idx * 34;
+        const ty = 78 + idx * (isNarrow ? 30 : 34);
         if (ty > H - 28) return;
         const isCur = idx === toStep.tokenIndex;
         const isPast = idx < toStep.tokenIndex;
-        const label = tok === -1 ? 'pop()  [-1]' : `push(${tok})`;
-        roundRectPath(ctx, toL.tapeX, ty, toL.tapeW, 28, 8);
+        const label = tok === -1 ? (isNarrow ? 'pop()' : 'pop()  [-1]') : `push(${tok})`;
+        roundRectPath(ctx, toL.tapeX, ty, toL.tapeW, isNarrow ? 25 : 28, 8);
         ctx.fillStyle = isCur ? pal.accentBg : pal.tileBg;
         ctx.fill();
         ctx.strokeStyle = isCur ? pal.accent : pal.tileBorder;
         ctx.lineWidth = isCur ? 1.8 : 1;
         ctx.stroke();
         ctx.fillStyle = isCur ? pal.accent : (isPast ? pal.muted : pal.tileText);
-        ctx.font = '600 12px "Cascadia Code", monospace';
+        ctx.font = isNarrow ? '600 11px "Cascadia Code", monospace' : '600 12px "Cascadia Code", monospace';
         ctx.textBaseline = 'middle';
-        ctx.fillText(label, toL.tapeX + 12, ty + 14);
+        ctx.fillText(label, toL.tapeX + (isNarrow ? 8 : 12), ty + (isNarrow ? 12.5 : 14));
       });
       ctx.restore();
 
@@ -759,7 +782,7 @@
       allUids.forEach((uid) => {
         const a = fromL.items[uid];
         const b = toL.items[uid];
-        let x, y, w = toL.boxW - 22, alpha = 1, val, isTop = false, isHighlight = false, isPopAnim = false;
+        let x, y, w = toL.boxW - toL.innerPad, alpha = 1, val, isTop = false, isHighlight = false, isPopAnim = false;
 
         if (a && b) {
           x = lerp(a.x, b.x, t);
@@ -837,7 +860,7 @@
 
       const fromTopY = fromStep.items.length > 0 ? fromL.items[fromStep.items[fromStep.items.length - 1].uid].y + toL.itemH / 2 : bucketBottom - 16;
       const toTopY = toStep.items.length > 0 ? toL.items[toStep.items[toStep.items.length - 1].uid].y + toL.itemH / 2 : bucketBottom - 16;
-      drawPill(ctx, '← TOP', bucketRight + 38, lerp(fromTopY, toTopY, t), pal.accentBg, pal.accent, pal.accent, 12);
+      drawPill(ctx, isNarrow ? 'TOP' : '← TOP', bucketRight + (isNarrow ? 22 : 38), lerp(fromTopY, toTopY, t), pal.accentBg, pal.accent, pal.accent, isNarrow ? 10 : 12);
     }
 
     // ---------------------------------------------------------
@@ -845,20 +868,23 @@
     // ---------------------------------------------------------
     _computeQueueLayout(step, W, H) {
       const itemsArr = step.items || [];
-      const pipeX = Math.max(155, Math.round(W * 0.24));
-      const pipeRight = Math.min(W - 44, Math.max(pipeX + 260, Math.round(W * 0.88)));
+      const isNarrow = W < 520;
+      const pipeX = isNarrow ? Math.max(72, Math.round(W * 0.24)) : Math.max(155, Math.round(W * 0.24));
+      const pipeRight = isNarrow ? (W - 14) : Math.min(W - 44, Math.max(pipeX + 260, Math.round(W * 0.88)));
       const pipeW = pipeRight - pipeX;
-      const tileW = Math.min(64, Math.max(44, Math.floor((pipeW - 36) / Math.max(6, itemsArr.length + 1)) - 8));
-      const gap = 10;
-      const laneY = Math.round(H * 0.40);
-      const tileH = 56;
+      const gap = isNarrow ? 6 : 10;
+      const tileW = isNarrow
+        ? Math.min(46, Math.max(30, Math.floor((pipeW - 18) / Math.max(5, itemsArr.length + 1)) - gap))
+        : Math.min(64, Math.max(44, Math.floor((pipeW - 36) / Math.max(6, itemsArr.length + 1)) - 8));
+      const laneY = Math.round(H * 0.38);
+      const tileH = isNarrow ? 46 : 56;
 
       const items = {};
       itemsArr.forEach((it, idx) => {
         items[it.uid] = {
           uid: it.uid,
           val: it.val,
-          x: pipeX + 16 + idx * (tileW + gap),
+          x: pipeX + (isNarrow ? 10 : 16) + idx * (tileW + gap),
           y: laneY,
           w: tileW,
           h: tileH,
@@ -870,7 +896,7 @@
       const poppedPose = step.popped ? {
         uid: step.popped.uid,
         val: step.popped.val,
-        x: Math.max(24, pipeX - tileW - 48),
+        x: Math.max(isNarrow ? 12 : 24, pipeX - tileW - (isNarrow ? 18 : 48)),
         y: laneY,
         w: tileW,
         h: tileH
@@ -882,14 +908,15 @@
     _drawQueue(fromStep, toStep, rawT, W, H, pal) {
       const ctx = this.ctx;
       const t = easeInOutCubic(rawT);
+      const isNarrow = W < 520;
       const fromL = this._computeQueueLayout(fromStep, W, H);
       const toL = this._computeQueueLayout(toStep, W, H);
 
       ctx.save();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
-      ctx.fillText('QUEUE (FIFO) · LẤY RA Ở FRONT ←  |  → THÊM VÀO Ở REAR', 24, 28);
+      ctx.fillText(isNarrow ? 'QUEUE (FIFO) · RA FRONT ← | → VÀO REAR' : 'QUEUE (FIFO) · LẤY RA Ở FRONT ←  |  → THÊM VÀO Ở REAR', isNarrow ? 14 : 24, isNarrow ? 24 : 28);
       ctx.restore();
 
       // Open-ended Queue horizontal rails
@@ -1026,49 +1053,59 @@
     _drawPostfix(fromStep, toStep, rawT, W, H, pal) {
       const ctx = this.ctx;
       const t = easeInOutCubic(rawT);
+      const isNarrow = W < 520;
 
       ctx.save();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
-      ctx.fillText('TÍNH BIỂU THỨC HẬU TỐ · QUÉT TRÁI SANG PHẢI', 24, 28);
+      ctx.fillText(isNarrow ? 'HẬU TỐ (RPN) · QUÉT TRÁI → PHẢI' : 'TÍNH BIỂU THỨC HẬU TỐ · QUÉT TRÁI SANG PHẢI', isNarrow ? 14 : 24, isNarrow ? 24 : 28);
       ctx.restore();
 
       // Token ribbon along top
       const tokens = toStep.tokens || [];
-      const tokW = 42, tokGap = 8;
+      const tokGap = isNarrow ? 4 : 8;
+      const tokW = isNarrow
+        ? Math.min(34, Math.max(22, Math.floor((W - 28 - Math.max(0, tokens.length - 1) * tokGap) / Math.max(tokens.length, 1))))
+        : 42;
       const totalTokW = tokens.length * tokW + Math.max(0, tokens.length - 1) * tokGap;
-      let rx = Math.max(24, (W - totalTokW) / 2);
-      const ry = 54;
+      let rx = Math.max(isNarrow ? 14 : 24, (W - totalTokW) / 2);
+      const ry = isNarrow ? 44 : 54;
+      const tokH = isNarrow ? 30 : 34;
       ctx.save();
       tokens.forEach((tok, idx) => {
         const isCur = idx === toStep.tokenIndex;
         const isPast = idx < toStep.tokenIndex;
-        roundRectPath(ctx, rx, ry, tokW, 34, 9);
+        roundRectPath(ctx, rx, ry, tokW, tokH, 8);
         ctx.fillStyle = isCur ? pal.compareBg : pal.tileBg;
         ctx.fill();
         ctx.strokeStyle = isCur ? pal.compareBorder : pal.tileBorder;
         ctx.lineWidth = isCur ? 2 : 1.2;
         ctx.stroke();
         ctx.fillStyle = isCur ? pal.compareText : (isPast ? pal.muted : pal.tileText);
-        ctx.font = '700 14px "Cascadia Code", monospace';
+        ctx.font = isNarrow ? '700 12px "Cascadia Code", monospace' : '700 14px "Cascadia Code", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(tok, rx + tokW / 2, ry + 17);
+        ctx.fillText(tok, rx + tokW / 2, ry + tokH / 2);
         rx += tokW + tokGap;
       });
       ctx.restore();
 
       // Stack bucket on left-center
       const maxVisible = Math.max(5, (toStep.items || []).length + 1);
-      const boxW = Math.min(164, Math.max(118, Math.round(W * 0.22)));
-      const itemH = Math.min(40, Math.floor((H - 175) / maxVisible));
-      const gap = 6;
-      const cx = Math.max(Math.round(boxW / 2) + 40, Math.round(W * 0.30));
-      const bottomY = H - 46;
+      const boxW = isNarrow
+        ? Math.min(112, Math.max(82, Math.round(W * 0.28)))
+        : Math.min(164, Math.max(118, Math.round(W * 0.22)));
+      const innerPad = isNarrow ? 14 : 22;
+      const itemH = Math.min(isNarrow ? 32 : 40, Math.floor((H - (isNarrow ? 145 : 175)) / maxVisible));
+      const gap = isNarrow ? 5 : 6;
+      const cx = isNarrow
+        ? Math.max(Math.round(boxW / 2) + 14, Math.round(W * 0.20))
+        : Math.max(Math.round(boxW / 2) + 40, Math.round(W * 0.30));
+      const bottomY = H - (isNarrow ? 36 : 46);
       const bucketLeft = cx - boxW / 2;
       const bucketRight = cx + boxW / 2;
-      const bucketTop = 118;
+      const bucketTop = isNarrow ? 98 : 118;
 
       ctx.save();
       ctx.beginPath();
@@ -1080,10 +1117,10 @@
       ctx.lineWidth = 3;
       ctx.lineJoin = 'round';
       ctx.stroke();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'center';
-      ctx.fillText('STACK', cx, bottomY + 24);
+      ctx.fillText('STACK', cx, bottomY + 22);
       ctx.restore();
 
       const mapItems = (st) => {
@@ -1092,7 +1129,7 @@
           m[it.uid] = {
             uid: it.uid,
             val: it.val,
-            x: cx - (boxW - 22) / 2,
+            x: cx - (boxW - innerPad) / 2,
             y: bottomY - (i + 1) * itemH - i * gap,
             isTop: i === st.items.length - 1
           };
@@ -1124,45 +1161,47 @@
         }
         ctx.save();
         ctx.globalAlpha = alpha;
-        roundRectPath(ctx, x, y, boxW - 22, itemH, 9);
+        roundRectPath(ctx, x, y, boxW - innerPad, itemH, 9);
         ctx.fillStyle = isHi ? pal.accentBg : pal.tileBg;
         ctx.fill();
         ctx.strokeStyle = isHi ? pal.accent : pal.tileBorder;
         ctx.lineWidth = isHi ? 2 : 1.5;
         ctx.stroke();
         ctx.fillStyle = isHi ? pal.accent : pal.tileText;
-        ctx.font = '700 15px "Segoe UI", sans-serif';
+        ctx.font = isNarrow ? '700 13px "Segoe UI", sans-serif' : '700 15px "Segoe UI", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(String(val), x + (boxW - 22) / 2, y + itemH / 2 + 1);
+        ctx.fillText(String(val), x + (boxW - innerPad) / 2, y + itemH / 2 + 1);
         ctx.restore();
       });
 
       // Right calculation card when computing an operator
-      const cardX = Math.max(bucketRight + 76, Math.round(W * 0.56));
-      const cardW = Math.min(260, W - cardX - 24);
-      if (cardW >= 140) {
+      const cardX = isNarrow ? (bucketRight + 16) : Math.max(bucketRight + 76, Math.round(W * 0.56));
+      const cardW = isNarrow ? Math.min(240, W - cardX - 14) : Math.min(260, W - cardX - 24);
+      if (cardW >= 120) {
         const c = toStep.calc;
+        const cardY = isNarrow ? 110 : 134;
+        const cardH = isNarrow ? 102 : 118;
         ctx.save();
-        roundRectPath(ctx, cardX, 134, cardW, 118, 14);
+        roundRectPath(ctx, cardX, cardY, cardW, cardH, 14);
         ctx.fillStyle = pal.tileBg;
         ctx.fill();
         ctx.strokeStyle = c ? pal.compareBorder : pal.tileBorder;
         ctx.lineWidth = c ? 2 : 1.3;
         ctx.stroke();
 
-        ctx.font = '700 12px "Segoe UI", sans-serif';
+        ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
         ctx.fillStyle = pal.muted;
         ctx.textAlign = 'center';
-        ctx.fillText('PHÉP TÍNH HIỆN TẠI', cardX + cardW / 2, 160);
+        ctx.fillText('PHÉP TÍNH HIỆN TẠI', cardX + cardW / 2, cardY + 24);
 
-        ctx.font = '700 18px "Cascadia Code", monospace';
+        ctx.font = isNarrow ? '700 15px "Cascadia Code", monospace' : '700 18px "Cascadia Code", monospace';
         ctx.fillStyle = c ? pal.compareText : pal.muted;
-        ctx.fillText(c ? `${c.left} ${c.op} ${c.right} = ${c.result}` : 'Đang đọc token...', cardX + cardW / 2, 198);
+        ctx.fillText(c ? `${c.left} ${c.op} ${c.right} = ${c.result}` : 'Đang đọc token...', cardX + cardW / 2, cardY + (isNarrow ? 56 : 64));
 
-        ctx.font = '600 12px "Segoe UI", sans-serif';
+        ctx.font = isNarrow ? '600 11px "Segoe UI", sans-serif' : '600 12px "Segoe UI", sans-serif';
         ctx.fillStyle = pal.muted;
-        ctx.fillText(c ? `Trái = ${c.left} · Phải = ${c.right}` : 'Pop đầu = toán hạng phải', cardX + cardW / 2, 228);
+        ctx.fillText(c ? `Trái = ${c.left} · Phải = ${c.right}` : 'Pop đầu = toán hạng phải', cardX + cardW / 2, cardY + (isNarrow ? 82 : 94));
         ctx.restore();
       }
     }
@@ -1175,14 +1214,22 @@
       const edges = {};
       if (!step.tree) return { nodes, edges, probe: null, radius: 22 };
 
+      const isNarrow = W < 520;
       const lnr = root.DSA_ALGO.walk(step.tree, 'LNR');
       const count = lnr.length;
       const h = root.DSA_ALGO.height(step.tree);
-      const slotW = Math.min(80, Math.max(40, (W - 104) / Math.max(count, 1)));
+      const padX = isNarrow ? 34 : 104;
+      const slotW = isNarrow
+        ? Math.min(64, Math.max(24, (W - padX) / Math.max(count, 1)))
+        : Math.min(80, Math.max(40, (W - padX) / Math.max(count, 1)));
       const startX = W / 2 - ((count - 1) * slotW) / 2;
-      const levelGap = Math.min(76, Math.max(46, (H - 152) / Math.max(h, 1)));
-      const topY = Math.max(108, (H - (h - 1) * levelGap) / 2 + 16);
-      const radius = count > 8 ? 19 : 22;
+      const levelGap = isNarrow
+        ? Math.min(68, Math.max(40, (H - 120) / Math.max(h, 1)))
+        : Math.min(76, Math.max(46, (H - 152) / Math.max(h, 1)));
+      const topY = isNarrow
+        ? Math.max(72, (H - (h - 1) * levelGap) / 2 + 12)
+        : Math.max(108, (H - (h - 1) * levelGap) / 2 + 16);
+      const radius = isNarrow ? (count > 7 ? 14 : 17) : (count > 8 ? 19 : 22);
 
       let idx = 0;
       const assign = (n, depth) => {
@@ -1238,21 +1285,22 @@
       const ctx = this.ctx;
       const t = easeInOutCubic(rawT);
       const springT = easeOutBack(Math.min(1, rawT));
+      const isNarrow = W < 520;
       const fromL = this._computeTreeLayout(fromStep, W, H);
       const toL = this._computeTreeLayout(toStep, W, H);
       const showBf = this.mode === 'avl';
 
       ctx.save();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
       ctx.fillText(
         showBf
           ? (this.avlBfMode === 'iuh'
-            ? 'CÂY AVL (IUH) • CSCB = h(Phải) - h(Trái)  [LH = -1 · EH = 0 · RH = +1]'
-            : 'CÂY AVL • BF = h(Trái) - h(Phải)  [Dò đường → Chèn/Xóa → Xoay]')
-          : 'CÂY BST • SO SÁNH TỪ GỐC (NHỎ SANG TRÁI, LỚN SANG PHẢI)',
-        24, 28
+            ? (isNarrow ? 'CÂY AVL (IUH) · CSCB = h(R) − h(L)' : 'CÂY AVL (IUH) • CSCB = h(Phải) - h(Trái)  [LH = -1 · EH = 0 · RH = +1]')
+            : (isNarrow ? 'CÂY AVL · BF = h(L) − h(R)' : 'CÂY AVL • BF = h(Trái) - h(Phải)  [Dò đường → Chèn/Xóa → Xoay]'))
+          : (isNarrow ? 'CÂY BST (Nhỏ trái · Lớn phải)' : 'CÂY BST • SO SÁNH TỪ GỐC (NHỎ SANG TRÁI, LỚN SANG PHẢI)'),
+        isNarrow ? 14 : 24, isNarrow ? 24 : 28
       );
       ctx.restore();
 
@@ -1398,7 +1446,7 @@
         ctx.stroke();
 
         ctx.fillStyle = fg;
-        ctx.font = '700 15px "Segoe UI", sans-serif';
+        ctx.font = n.radius < 18 ? '700 12px "Segoe UI", sans-serif' : '700 15px "Segoe UI", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(String(n.v), 0, 1);
@@ -1407,9 +1455,11 @@
           const bfStr = (n.bf > 0 ? '+' : '') + n.bf;
           const bx = n.radius * 0.78;
           const by = -n.radius * 0.78;
-          ctx.font = '700 12px "Cascadia Code", monospace';
-          const bw = ctx.measureText(bfStr).width + 10;
-          roundRectPath(ctx, bx - bw / 2, by - 10, bw, 20, 6);
+          const bfSmall = n.radius < 18;
+          ctx.font = bfSmall ? '700 10px "Cascadia Code", monospace' : '700 12px "Cascadia Code", monospace';
+          const bw = ctx.measureText(bfStr).width + (bfSmall ? 7 : 10);
+          const bh = bfSmall ? 16 : 20;
+          roundRectPath(ctx, bx - bw / 2, by - bh / 2, bw, bh, 6);
           ctx.fillStyle = unbalanced ? pal.swapBorder : pal.bfPillBg;
           ctx.fill();
           ctx.fillStyle = unbalanced ? '#ffffff' : pal.muted;

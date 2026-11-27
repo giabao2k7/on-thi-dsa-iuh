@@ -32,7 +32,8 @@
     return {
       bubbleDir: 'rtl',
       avlBfMode: 'iuh',
-      treeReplaceSide: 'right'
+      treeReplaceSide: 'right',
+      sidebarPinned: false
     };
   }
 
@@ -169,6 +170,7 @@
         attempts: parsed.attempts,
         mistakes: parsed.mistakes,
         exams: parsed.exams,
+        prefs: { ...defaultPrefs(), ...(parsed.prefs || {}) },
         simModeState: { ...cloneDefaults(), ...(parsed.simModeState || {}) }
       };
       this.save();
