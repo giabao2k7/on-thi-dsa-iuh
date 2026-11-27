@@ -117,6 +117,7 @@
       this.steps = [];
       this.currentIndex = 0;
       this.mode = 'bubble';
+      this.avlBfMode = 'iuh';
       this.speed = 1;
       this.animState = null;
       this.rafId = null;
@@ -325,10 +326,36 @@
       const headerLabel = this.mode === 'insertion'
         ? 'VÙNG GIỮ TẠM (x)  &  MẢNG CHÍNH (chỉ số từ 0)'
         : (toStep.kind === 'binary'
-          ? 'TÌM KIẾM NHỊ PHÂN • VÙNG [low .. high] THU HẸP MƯỢT'
-          : 'MẢNG • CHỈ SỐ TỪ 0');
+          ? 'TÌM KIẾM NHỊ PHÂN • VÙNG [left .. right] THU HẸP MƯỢT'
+          : (toStep.kind === 'quick'
+            ? 'QUICK SORT (SLIDE IUH) • CHỌN MỐC GIỮA x = a[(left+right)/2] & PHÂN HOẠCH'
+            : 'MẢNG • CHỈ SỐ TỪ 0'));
       ctx.fillText(headerLabel, 24, 28);
+      if (toStep.kind === 'quick' && toStep.pivotVal !== null && toStep.pivotVal !== undefined) {
+        drawPill(ctx, `Mốc x = ${toStep.pivotVal}`, W - 80, 26, pal.compareBg, pal.compareBorder, pal.compareText, 12);
+      }
       ctx.restore();
+
+      if (toStep.kind === 'quick' && (fromStep.range || toStep.range)) {
+        const fR = fromStep.range || toStep.range;
+        const tR = toStep.range || fromStep.range;
+        if (fR && tR) {
+          const curLo = lerp(fR[0], tR[0], t);
+          const curHi = lerp(fR[1], tR[1], t);
+          const boxX = toL.startX + curLo * toL.stepX - 10;
+          const boxW = Math.max(0, (curHi - curLo) * toL.stepX + toL.tileW + 20);
+          if (boxW > 4) {
+            ctx.save();
+            roundRectPath(ctx, boxX, toL.baseY - 18, boxW, toL.tileH + 36, 16);
+            ctx.fillStyle = pal.bracketBg;
+            ctx.fill();
+            ctx.strokeStyle = pal.bracketBorder;
+            ctx.lineWidth = 1.6;
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      }
 
       if (this.mode === 'insertion' && toL.n > 0) {
         ctx.save();
@@ -520,8 +547,11 @@
           if (!it) return;
           let state = 'default';
           if (st.swap && st.swap.includes(idx)) state = 'swap';
+          else if (st.compare && st.compare.includes(idx)) state = 'compare';
+          else if (st.sorted && st.sorted.includes(idx)) state = 'sorted';
           else if (st.active && st.active.includes(idx)) state = 'compare';
-          m[it.uid] = { uid: it.uid, val: it.val, idx, x: startX + idx * stepX, y: baseY, state };
+          const lift = state === 'compare' ? -9 : 0;
+          m[it.uid] = { uid: it.uid, val: it.val, idx, x: startX + idx * stepX, y: baseY + lift, state };
         });
         if (st.pointers) {
           Object.keys(st.pointers).forEach((k) => {
@@ -1160,7 +1190,7 @@
         assign(n.l, depth + 1);
         const x = startX + idx * slotW;
         const y = topY + depth * levelGap;
-        const nodeBf = root.DSA_ALGO.bf(n);
+        const nodeBf = this.avlBfMode === 'iuh' ? root.DSA_ALGO.bfIuh(n) : root.DSA_ALGO.bf(n);
         const highlighted = step.highlight && step.highlight.includes(n.v);
         const visited = step.visited && step.visited.includes(n.v);
         nodes[n.v] = { v: n.v, x, y, bf: nodeBf, highlighted, visited, radius };
@@ -1218,7 +1248,9 @@
       ctx.textAlign = 'left';
       ctx.fillText(
         showBf
-          ? 'CÂY AVL • SO SÁNH TỪ GỐC → CHÈN / XÓA → XOAY CÂN BẰNG'
+          ? (this.avlBfMode === 'iuh'
+            ? 'CÂY AVL (IUH) • CSCB = h(Phải) - h(Trái)  [LH = -1 · EH = 0 · RH = +1]'
+            : 'CÂY AVL • BF = h(Trái) - h(Phải)  [Dò đường → Chèn/Xóa → Xoay]')
           : 'CÂY BST • SO SÁNH TỪ GỐC (NHỎ SANG TRÁI, LỚN SANG PHẢI)',
         24, 28
       );
@@ -1330,7 +1362,15 @@
         ctx.restore();
       });
 
-      Object.values(curNodes).forEach((n) => {
+      const repVal = toStep.replacedAnim ? toStep.replacedAnim.fromVal : null;
+      const drawOrder = Object.values(curNodes).sort((a, b) => {
+        if (repVal !== null) {
+          if (a.v === repVal && b.v !== repVal) return 1;
+          if (b.v === repVal && a.v !== repVal) return -1;
+        }
+        return a.alpha - b.alpha;
+      });
+      drawOrder.forEach((n) => {
         if (n.skipDraw || n.alpha < 0.02) return;
         ctx.save();
         ctx.globalAlpha = n.alpha;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DSA Studio IUH — Ôn Thi Trắc Nghiệm &amp; Mô Phỏng CTDL&amp;GT 60fps</title>
-  <meta name="description" content="Ứng dụng ôn thi trắc nghiệm Cấu trúc dữ liệu và giải thuật (DSA / CTDL&amp;GT) dành cho sinh viên IT IUH: 29 dạng bài trọng tâm, 11 chế độ mô phỏng 60fps mượt mà, luyện biến thể và thi thử." />
+  <meta name="description" content="Ứng dụng ôn thi trắc nghiệm Cấu trúc dữ liệu và giải thuật (DSA / CTDL&amp;GT) dành cho sinh viên IT IUH: 32 dạng bài theo slide IUH, 12 chế độ mô phỏng 60fps mượt mà, luyện biến thể và thi thử." />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2314b8a6'/%3E%3Cstop offset='100%25' stop-color='%230284c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='8' r='3' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='9' cy='23' r='3' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='23' cy='23' r='3' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Cpath d='M14 10.6L10.4 20.2M18 10.6L21.6 20.2' stroke='%23fff' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -25,7 +25,7 @@
           </div>
           <div>
             <div class="brand-title">DSA Studio</div>
-            <span class="brand-pill">IUH · 29 dạng</span>
+            <span class="brand-pill">IUH · 32 dạng</span>
           </div>
         </div>
 
@@ -39,7 +39,7 @@
           <button data-tab="lessons" class="nav-btn">
             <span class="nav-btn-inner">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
-              <span>Học 29 dạng</span>
+              <span>Học 32 dạng</span>
             </span>
           </button>
           <button data-tab="sim" class="nav-btn">
@@ -106,21 +106,21 @@
       <!-- TAB 1: HOME -->
       <section id="tab-home" class="tab-panel active"></section>
 
-      <!-- TAB 2: LESSONS (29 TYPES) -->
+      <!-- TAB 2: LESSONS (32 TYPES) -->
       <section id="tab-lessons" class="tab-panel lessons-layout">
         <div class="lessons-sidebar">
-          <input id="lesson-search" type="text" class="input-field" placeholder="Tìm tên dạng, nhóm, số (1–29)..." />
+          <input id="lesson-search" type="text" class="input-field" placeholder="Tìm tên dạng, chương, số (1–32)..." />
           <select id="lesson-group" class="select-field"></select>
           <div id="lesson-list" class="lessons-list"></div>
         </div>
         <div id="lesson-detail" class="lessons-content"></div>
       </section>
 
-      <!-- TAB 3: SIMULATOR (11 MODES, 60FPS) -->
+      <!-- TAB 3: SIMULATOR (12 MODES, 60FPS) -->
       <section id="tab-sim" class="tab-panel sim-layout">
         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;">
           <div>
-            <h1 class="page-title" style="font-size:20px;">Mô phỏng từng bước 60fps (11 chế độ)</h1>
+            <h1 class="page-title" style="font-size:20px;">Mô phỏng từng bước 60fps (12 chế độ)</h1>
             <p id="sim-help" class="page-sub">Nhập 1–12 số nguyên, bấm Tiếp / Lùi hoặc phím mũi tên ← / → / Space.</p>
           </div>
           <div id="sim-modes" class="pill-group"></div>
@@ -144,6 +144,8 @@
             <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#10b981;"></span>Xong / Cân bằng</span>
           </div>
         </div>
+
+        <div id="sim-ctx-bar" class="surface-card sim-ctx-bar" style="display:none;"></div>
 
         <div class="surface-card sim-stage">
           <div class="sim-stage-head">

@@ -489,8 +489,8 @@
           ? `Sang cây phải rồi đi trái tối đa: nhỏ nhất cây phải là ${ans}.`
           : `Sang cây trái rồi đi phải tối đa: lớn nhất cây trái là ${ans}.`;
         finish(q, r, String(ans), String(b), String(b + 10), String(b - 9), String(b - 6));
-        q.trace = Algo.treeTrace(vals, false, right ? b : null);
-        q.simPreset = { mode: 'bst', arr: vals.join(', '), key: String(b) };
+        q.trace = Algo.treeTrace(vals, false, b, { replaceSide: right ? 'right' : 'left' });
+        q.simPreset = { mode: 'bst', arr: vals.join(', '), key: String(b), replaceSide: right ? 'right' : 'left' };
         break;
       }
 
@@ -541,6 +541,119 @@
         q.explanation = `Sau xóa, gốc có |BF|=2; cây con phía cao có BF=0. Dùng xoay đơn ${left ? 'phải' : 'trái'}. Gốc cuối ${ans}.\n${explainTrace(q.trace)}`;
         finish(q, r, String(ans), String(b + 15), String(b + 30), String(b), String(b + 10), String(b + 20));
         q.simPreset = { mode: 'avl', arr: vals.join(', '), key: String(remove) };
+        break;
+      }
+
+      case 30: {
+        if (r.next(3) === 0) {
+          const worst = r.next(2) === 0;
+          q.prompt = worst
+            ? 'Theo Slide IUH, khi chọn mốc giữa trong Quick Sort mà mọi lần phân hoạch mốc đều rơi vào cực đại hoặc cực tiểu, độ phức tạp xấu nhất là gì?'
+            : 'Theo Slide IUH, khi mọi lần phân hoạch Quick Sort đều chọn được mốc trùng trung vị (chia đều 2 nửa), độ phức tạp là gì?';
+          const ans = worst ? 'O(n²)' : 'O(n log n)';
+          q.explanation = worst
+            ? 'Mốc cực đại/cực tiểu chia đoạn thành 1 và n-1 phần tử, tạo n tầng đệ quy → O(n²).'
+            : 'Chia đều thành 2 nửa kích thước n/2 cho log₂n tầng đệ quy, mỗi tầng quét O(n) → O(n log n).';
+          finish(q, r, ans, ...['O(1)', 'O(log n)', 'O(n log n)', 'O(n²)'].filter((x) => x !== ans));
+          q.simPreset = { mode: 'quick', arr: a.join(', '), key: '' };
+        } else {
+          const mid = Math.floor((a.length - 1) / 2);
+          const x = a[mid];
+          q.trace = Algo.quickSort(a);
+          const partStep = q.trace.find((s) => s.title.startsWith(`Xong phân hoạch [0 .. ${a.length - 1}]`));
+          const end = partStep ? partStep.values : a;
+          const ans = `x=${x}, ${Algo.formatArr(end)}`;
+          q.prompt = `Quick Sort chuẩn Slide IUH trên ${Algo.formatArr(a)}: chọn mốc giữa x = a[(left+right)/2], dùng 2 con trỏ i, j. Sau lần phân hoạch đầu tiên trên [0..${a.length - 1}], mốc x và mảng là gì?`;
+          q.explanation = `mid = (0 + ${a.length - 1})/2 = ${mid} → x = ${x}. Sau khi i, j vượt nhau, các số ≤ ${x} nằm bên trái và ≥ ${x} nằm bên phải: ${Algo.formatArr(end)}.`;
+          finish(
+            q, r, ans,
+            `x=${a[0]}, ${Algo.formatArr(end)}`,
+            `x=${x}, ${reverseArrStr(end)}`,
+            `x=${x + 1}, ${Algo.formatArr(end)}`,
+            `x=${x + 2}, ${Algo.formatArr(a)}`,
+            `x=${x}, ${Algo.formatArr(end.map((v) => v + 1))}`
+          );
+          q.simPreset = { mode: 'quick', arr: a.join(', '), key: '' };
+        }
+        break;
+      }
+
+      case 31: {
+        const num = r.next(11, 62);
+        const rems = [];
+        let tmp = num;
+        while (tmp > 0) {
+          rems.push(tmp % 2);
+          tmp = Math.floor(tmp / 2);
+        }
+        const binStr = rems.slice().reverse().join('');
+        const askPush = r.next(2) === 0;
+        if (askPush) {
+          const ans = rems.join(', ');
+          q.prompt = `Đổi số thập phân n = ${num} sang nhị phân bằng Stack (lần lượt chia 2 lấy dư rồi Push vào Stack). Thứ tự các bit được Push vào từ đầu đến cuối?`;
+          q.explanation = `Chia liên tiếp ${num} cho 2 thu số dư từ LSB đến MSB: ${ans}. Khi Pop hết Stack ra mới được số nhị phân ${binStr}₂.`;
+          finish(
+            q, r, ans,
+            rems.slice().reverse().join(', '),
+            (num + 1).toString(2).split('').join(', '),
+            (num + 2).toString(2).split('').join(', '),
+            (num ^ 1).toString(2).split('').join(', '),
+            (num + 3).toString(2).split('').join(', ')
+          );
+        } else {
+          const ans = binStr;
+          q.prompt = `Dùng Stack đổi số n = ${num} (hệ 10) sang hệ nhị phân (Push(n % 2), n /= 2 rồi Pop hết ra). Kết quả in ra là gì?`;
+          q.explanation = `Các số dư đẩy vào Stack là [${rems.join(', ')}]. Do cơ chế LIFO, Pop ra theo chiều ngược lại cho kết quả ${binStr}₂.`;
+          finish(
+            q, r, ans,
+            rems.join(''),
+            (num + 1).toString(2),
+            (num + 2).toString(2),
+            (num ^ 1).toString(2),
+            (num + 3).toString(2)
+          );
+        }
+        break;
+      }
+
+      case 32: {
+        const variant = r.next(3);
+        if (variant === 0) {
+          q.prompt = 'Khi biểu diễn cây tổng quát thành cây nhị phân tương đương theo quy tắc Slide IUH (CHILD / SIBLING), con trái (pLeft) và con phải (pRight) của nút X trỏ tới đâu?';
+          const ans = 'Con cực trái (con cả) của X và em ruột kế bên phải của X';
+          q.explanation = 'Quy tắc Slide C5: pLeft giữ con đầu tiên bên trái của X (CHILD), pRight trỏ sang anh/em kế cận bên phải của X (SIBLING).';
+          finish(
+            q, r, ans,
+            'Con thứ nhất của X và con thứ hai của X',
+            'Nút cha của X và con cực phải của X',
+            'Anh bên trái của X và con cực phải của X'
+          );
+        } else if (variant === 1) {
+          const idx = r.next(2, 12);
+          const ans = `${2 * idx} và ${2 * idx + 1}`;
+          q.prompt = `Cây nhị phân lưu bằng mảng 1 chiều đánh chỉ số từ 1 (gốc ở vị trí 1). Nút tại vị trí i = ${idx} có con trái và con phải ở chỉ số nào?`;
+          q.explanation = `Theo Slide C5 tr. 20 (đánh chỉ số từ 1): con trái của nút i là 2*i = ${2 * idx}, con phải là 2*i + 1 = ${2 * idx + 1}.`;
+          finish(
+            q, r, ans,
+            `${2 * idx + 1} và ${2 * idx + 2}`,
+            `${2 * idx} và ${2 * idx + 2}`,
+            `${2 * idx - 2} và ${2 * idx - 1}`,
+            `${idx + 1} và ${idx + 2}`
+          );
+        } else {
+          const j = r.next(4, 18);
+          const parent = Math.floor(j / 2);
+          const ans = String(parent);
+          q.prompt = `Cây nhị phân lưu bằng mảng đánh chỉ số từ 1 (gốc ở vị trí 1). Nút tại chỉ số j = ${j} có nút cha ở chỉ số nào?`;
+          q.explanation = `Theo quy ước đánh chỉ số từ 1: nút cha của vị trí j là floor(j / 2) = floor(${j} / 2) = ${parent}.`;
+          finish(
+            q, r, ans,
+            String(parent + 1),
+            String(j - 1),
+            String(j * 2),
+            String(j + 1)
+          );
+        }
         break;
       }
 

@@ -17,6 +17,10 @@
   const navMistakeCount = document.getElementById('nav-mistake-count');
 
   let currentTab = 'home';
+  let simViz = null;
+  let modalViz = null;
+  let miniViz = null;
+  let miniPlayTimer = null;
 
   function esc(str) {
     return String(str == null ? '' : str)
@@ -59,6 +63,7 @@
     }
     if (simViz) simViz.renderCurrent();
     if (modalViz) modalViz.renderCurrent();
+    if (miniViz) miniViz.renderCurrent();
   }
 
   document.getElementById('theme-toggle').addEventListener('click', () => {
@@ -88,7 +93,11 @@
 
     if (tabId === 'home') renderHome();
     else if (tabId === 'mistakes') renderMistakes();
-    else if (tabId === 'sim') {
+    else if (tabId === 'lessons') {
+      requestAnimationFrame(() => {
+        if (miniViz) { miniViz.resize(); miniViz.renderCurrent(); }
+      });
+    } else if (tabId === 'sim') {
       requestAnimationFrame(() => {
         simViz.resize();
         simViz.renderCurrent();
@@ -124,11 +133,11 @@
     el.innerHTML = `
       <div class="page-header">
         <div>
-          <h1 class="page-title">Ôn thi Trắc nghiệm DSA — Chuẩn 29 dạng IUH</h1>
-          <p class="page-sub">Học cách giải · Mô phỏng 60fps từng bước · Luyện biến thể không giới hạn · Thi thử offline & web</p>
+          <h1 class="page-title">Ôn thi Trắc nghiệm DSA — Chuẩn 32 dạng Slide IUH</h1>
+          <p class="page-sub">4 Chương chuẩn bài giảng · 12 chế độ mô phỏng 60fps · Luyện biến thể · Thi thử offline &amp; web</p>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <button class="btn btn-lg btn-primary" data-jump="lessons">Học 29 dạng</button>
+          <button class="btn btn-lg btn-primary" data-jump="lessons">Học 32 dạng</button>
           <button class="btn btn-lg" data-jump="sim">Mô phỏng 60fps ▶</button>
           <button class="btn btn-lg" data-jump="practice">Luyện câu mới</button>
         </div>
@@ -173,24 +182,24 @@
       <div class="grid-2" style="margin-bottom:18px;">
         <div class="surface-card" style="padding:20px;display:flex;flex-direction:column;gap:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <strong style="font-size:15px;">Lộ trình ôn thi 4 chặng</strong>
-            <span class="brand-pill">29 dạng chuẩn</span>
+            <strong style="font-size:15px;">Lộ trình ôn thi theo 4 Chương IUH</strong>
+            <span class="brand-pill">32 dạng chuẩn</span>
           </div>
           <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chặng 1 · Tìm kiếm, Sắp xếp & Độ phức tạp (Dạng 1–10)</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Big-O, Binary Search, Bubble, Selection, Insertion, Interchange, Nghịch thế</div>
+            <strong>Chương 2 · Tìm kiếm &amp; Sắp xếp (Dạng 1–10, 30)</strong>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Big-O, Linear/Binary Search, Bubble (Phải→Trái), Selection, Insertion, Interchange, Quick Sort</div>
           </div>
           <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chặng 2 · DSLK, Stack/Queue & Biểu thức (Dạng 11–20)</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Đổi cặp con trỏ, Đệ quy, LIFO/FIFO, Hàng vòng, Hậu tố / Tiền tố</div>
+            <strong>Chương 3 · Danh sách liên kết (Dạng 11–14)</strong>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">DSLK đơn/đôi/vòng, pHead/pTail, Chèn/Xóa, Đổi cặp &amp; Đệ quy</div>
           </div>
           <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chặng 3 · Cây nhị phân, BST & Cây AVL (Dạng 21–29)</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">NLR/LNR/LRN/Level, Dựng cây, Thế mạng xóa BST, Xoay LL/RR/LR/RL trên AVL</div>
+            <strong>Chương 4 · Stack, Queue &amp; Biểu thức (Dạng 15–20, 31)</strong>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">LIFO/FIFO, Hàng vòng, Đổi cơ số nhị phân, Ngoặc, Hậu tố (RPN)</div>
           </div>
           <div class="surface-sub" style="padding:12px 14px;">
-            <strong>Chặng 4 · Thi thử tổng hợp & Chữa sổ câu sai</strong>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Làm đề trộn ngẫu nhiên và tự động kiểm tra lại các câu từng làm nhầm</div>
+            <strong>Chương 5 · Cây nhị phân, BST &amp; Cây AVL (Dạng 21–29, 32)</strong>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">NLR/LNR/LRN, Lưu mảng 2i, Thế mạng Trái/Phải BST, Xoay CSCB AVL</div>
           </div>
         </div>
 
@@ -210,8 +219,8 @@
             </div>
           ` : `
             <div class="surface-sub" style="padding:14px;font-size:13px;line-height:1.65;">
-              1. Vào <strong>Học 29 dạng</strong> đọc bài mẫu, suy luận và mẹo bẫy.<br/>
-              2. Vào <strong>Mô phỏng 60fps</strong> xem từng bước chuyển động mượt (so sánh, đổi chỗ, xoay AVL).<br/>
+              1. Vào <strong>Học 32 dạng</strong> xem sơ đồ trực quan, mô phỏng mini &amp; hướng dẫn đọc nhanh code chuẩn IUH.<br/>
+              2. Vào <strong>Mô phỏng 60fps</strong> xem từng bước chuyển động mượt (12 chế độ, chọn thế mạng Trái/Phải).<br/>
               3. Vào <strong>Luyện biến thể</strong> để làm các câu sinh số ngẫu nhiên mới hoàn toàn.<br/>
               4. Chạy <strong>Thi thử</strong> trước khi đi thi thật!
             </div>
@@ -278,7 +287,7 @@
   }
 
   // =========================================================
-  // 2. LESSONS TAB (ALL 29 LESSONS)
+  // 2. LESSONS TAB (ALL 32 IUH LESSONS + VISUALS + MINI-SIM)
   // =========================================================
   const LESSON_SIM_MAP = {
     3: { mode: 'binary', arr: '2, 5, 8, 11, 14, 17, 20', key: '14' },
@@ -286,7 +295,7 @@
     5: { mode: 'interchange', arr: '5, 3, 4, 1', key: '' },
     6: { mode: 'selection', arr: '27, 40, -7, 5, 57', key: '' },
     7: { mode: 'insertion', arr: '3, 7, 1, 8, 2, 5', key: '' },
-    8: { mode: 'bubble', arr: '5, 13, 12, 2, 13, 8', key: '' },
+    8: { mode: 'bubble', arr: '12, 2, 8, 5, 1, 6, 4, 15', key: '', bubbleDir: 'rtl' },
     9: { mode: 'bubble', arr: '4, 1, 3, 2', key: '' },
     13: { mode: 'linked', arr: '1, 2, 3, 4, 5, 6, 7', key: '' },
     15: { mode: 'stack', arr: '1, 2, -1, 3, 2, -1, 2', key: '' },
@@ -298,7 +307,8 @@
     26: { mode: 'bst', arr: '8, 3, 12, 1, 5, 6', key: '8' },
     27: { mode: 'bst', arr: '8, 3, 1, 6, 10, 14', key: '' },
     28: { mode: 'avl', arr: '30, 10, 20, 40, 50', key: '' },
-    29: { mode: 'avl', arr: '30, 20, 40, 10, 25', key: '40' }
+    29: { mode: 'avl', arr: '30, 20, 40, 10, 25', key: '40' },
+    30: { mode: 'quick', arr: '12, 2, 8, 5, 1, 6, 4, 15', key: '' }
   };
 
   let selectedLessonId = 1;
@@ -308,8 +318,8 @@
   const lessonDetail = document.getElementById('lesson-detail');
 
   function initLessonsControls() {
-    const groups = ['Tất cả nhóm', ...Array.from(new Set(Lessons.map((l) => l.group)))];
-    lessonGroup.innerHTML = groups.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+    const chapters = ['Tất cả chương (32 dạng)', ...Array.from(new Set(Lessons.map((l) => l.chapter || l.group)))];
+    lessonGroup.innerHTML = chapters.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
     lessonSearch.addEventListener('input', renderLessonList);
     lessonGroup.addEventListener('change', renderLessonList);
     renderLessonList();
@@ -320,8 +330,9 @@
     const q = lessonSearch.value.trim().toLowerCase();
     const grp = lessonGroup.value;
     const filtered = Lessons.filter((l) => {
-      const grpOk = !grp || grp === 'Tất cả nhóm' || l.group === grp;
-      const textOk = (l.id + ' ' + l.title + ' ' + l.group).toLowerCase().includes(q);
+      const ch = l.chapter || l.group;
+      const grpOk = !grp || grp.startsWith('Tất cả') || ch === grp;
+      const textOk = (l.id + ' ' + l.title + ' ' + l.group + ' ' + ch).toLowerCase().includes(q);
       return grpOk && textOk;
     });
     lessonList.innerHTML = filtered.map((l) => {
@@ -329,7 +340,7 @@
       return `
         <button class="lesson-item ${active ? 'active' : ''}" data-lid="${l.id}">
           <div style="font-size:13px;font-weight:700;">${esc(lessonLabel(l.id))}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${esc(l.group)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${esc(l.chapter || l.group)}</div>
         </button>
       `;
     }).join('') || '<div style="font-size:12px;color:var(--text-muted);padding:10px;">Không tìm thấy dạng phù hợp.</div>';
@@ -346,83 +357,344 @@
 
   function renderLessonDiagramSvg(kind) {
     if (!kind) return '';
-    if (kind === 'badbst') {
-      return `
-        <svg width="260" height="150" viewBox="0 0 260 150" style="display:block;margin-top:8px;">
+    const svgs = {
+      bigo: `
+        <svg viewBox="0 0 540 150" style="width:100%;max-width:540px;display:block;">
+          <line x1="40" y1="125" x2="500" y2="125" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="40" y1="20" x2="40" y2="125" stroke="var(--border-strong)" stroke-width="2"/>
+          <path d="M 40 118 L 500 118" stroke="#10b981" stroke-width="2.5" fill="none"/>
+          <path d="M 40 120 Q 160 85 500 78" stroke="#14b8a6" stroke-width="2.5" fill="none"/>
+          <path d="M 40 122 Q 260 65 500 38" stroke="#f59e0b" stroke-width="2.5" fill="none"/>
+          <path d="M 40 124 Q 160 115 245 20" stroke="#f43f5e" stroke-width="2.8" fill="none"/>
+          <text x="505" y="121" fill="#10b981" font-size="11" font-weight="700">O(1)</text>
+          <text x="505" y="81" fill="#14b8a6" font-size="11" font-weight="700">O(log n)</text>
+          <text x="505" y="42" fill="#f59e0b" font-size="11" font-weight="700">O(n)</text>
+          <text x="255" y="28" fill="#f43f5e" font-size="11" font-weight="700">O(n²) · chậm rất nhanh khi n lớn</text>
+          <text x="270" y="142" text-anchor="middle" fill="var(--text-muted)" font-size="11">Kích thước dữ liệu n →</text>
+        </svg>`,
+      linear: `
+        <svg viewBox="0 0 540 120" style="width:100%;max-width:540px;display:block;">
+          <text x="20" y="20" fill="var(--text-muted)" font-size="11" font-weight="700">Duyệt i = 0 → n-1 · gặp a[i] == 15 thì return i ngay</text>
+          <g font-family="Segoe UI, sans-serif" font-weight="700" text-anchor="middle">
+            <rect x="20" y="34" width="66" height="44" rx="10" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="53" y="61" fill="var(--text-muted)" font-size="15">5</text><text x="53" y="96" fill="var(--text-muted)" font-size="11">i=0</text>
+            <rect x="100" y="34" width="66" height="44" rx="10" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="133" y="61" fill="var(--text-muted)" font-size="15">10</text><text x="133" y="96" fill="var(--text-muted)" font-size="11">i=1</text>
+            <rect x="180" y="34" width="66" height="44" rx="10" fill="var(--emerald-soft)" stroke="#10b981" stroke-width="2"/><text x="213" y="61" fill="var(--emerald-text)" font-size="15">15</text><text x="213" y="96" fill="var(--emerald-text)" font-size="11">i=2 ✓ return 2</text>
+            <rect x="260" y="34" width="66" height="44" rx="10" fill="var(--bg-surface)" stroke="var(--border-strong)" opacity="0.45"/><text x="293" y="61" fill="var(--text-muted)" font-size="15">20</text><text x="293" y="96" fill="var(--text-muted)" font-size="11">không xét</text>
+          </g>
+        </svg>`,
+      inversions: `
+        <svg viewBox="0 0 540 135" style="width:100%;max-width:540px;display:block;">
+          <text x="20" y="18" fill="var(--text-muted)" font-size="11" font-weight="700">Nghịch thế (a[i] > a[j] với i &lt; j) — mỗi lần swap kề giảm đúng 1 nghịch thế</text>
+          <g font-weight="700" text-anchor="middle">
+            <rect x="30" y="48" width="52" height="40" rx="10" fill="var(--rose-soft)" stroke="#f43f5e"/><text x="56" y="73" fill="var(--rose-text)">4</text>
+            <rect x="110" y="48" width="52" height="40" rx="10" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="136" y="73" fill="var(--text-main)">1</text>
+            <rect x="190" y="48" width="52" height="40" rx="10" fill="var(--amber-soft)" stroke="#f59e0b"/><text x="216" y="73" fill="var(--amber-text)">3</text>
+            <rect x="270" y="48" width="52" height="40" rx="10" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="296" y="73" fill="var(--text-main)">2</text>
+          </g>
+          <path d="M 56 46 Q 96 24 136 46" stroke="#f43f5e" fill="none" stroke-width="1.6"/>
+          <path d="M 56 46 Q 136 14 216 46" stroke="#f43f5e" fill="none" stroke-width="1.6"/>
+          <path d="M 56 46 Q 176 4 296 46" stroke="#f43f5e" fill="none" stroke-width="1.6"/>
+          <path d="M 216 90 Q 256 112 296 90" stroke="#f59e0b" fill="none" stroke-width="1.8"/>
+          <text x="355" y="64" fill="var(--rose-text)" font-size="12" font-weight="700">4 lớn hơn: (4,1), (4,3), (4,2) = 3</text>
+          <text x="355" y="86" fill="var(--amber-text)" font-size="12" font-weight="700">3 lớn hơn: (3,2) = 1 → Tổng = 4</text>
+        </svg>`,
+      matrix2d: `
+        <svg viewBox="0 0 540 140" style="width:100%;max-width:540px;display:block;">
+          <text x="20" y="20" fill="var(--accent)" font-size="12" font-weight="700">Chỉ số i cố định → Sắp theo HÀNG</text>
+          <text x="290" y="20" fill="#f59e0b" font-size="12" font-weight="700">Chỉ số j cố định → Sắp theo CỘT</text>
+          <g font-family="Cascadia Code, monospace" font-size="12" text-anchor="middle" font-weight="700">
+            <rect x="20" y="34" width="180" height="28" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="110" y="52" fill="var(--accent)">arr[i][j] ↔ arr[i][k]  (Hàng i)</text>
+            <rect x="20" y="68" width="180" height="28" rx="6" fill="var(--bg-surface)" stroke="var(--border-strong)"/>
+            <text x="110" y="86" fill="var(--text-muted)">[1, 9, 4] → [1, 4, 9]</text>
+            <rect x="290" y="34" width="84" height="86" rx="6" fill="var(--amber-soft)" stroke="#f59e0b"/>
+            <text x="332" y="56" fill="var(--amber-text)">a[0][j]</text>
+            <text x="332" y="78" fill="var(--amber-text)">a[1][j]</text>
+            <text x="332" y="100" fill="var(--amber-text)">a[2][j]</text>
+            <text x="455" y="78" fill="var(--text-soft)" font-size="11">So a[i][j] với a[k][j]</text>
+          </g>
+        </svg>`,
+      slltypes: `
+        <svg viewBox="0 0 560 148" style="width:100%;max-width:560px;display:block;">
+          <g font-family="Segoe UI, sans-serif" font-size="11" font-weight="700">
+            <text x="16" y="24" fill="var(--accent)">DSLK Đơn (pHead, pTail):</text>
+            <rect x="175" y="8" width="44" height="26" rx="6" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="197" y="25" text-anchor="middle" fill="var(--text-main)">A</text>
+            <line x1="219" y1="21" x2="245" y2="21" stroke="var(--accent)" stroke-width="2"/>
+            <rect x="245" y="8" width="44" height="26" rx="6" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="267" y="25" text-anchor="middle" fill="var(--text-main)">B</text>
+            <line x1="289" y1="21" x2="315" y2="21" stroke="var(--accent)" stroke-width="2"/>
+            <text x="322" y="25" fill="var(--text-muted)">NULL</text>
+
+            <text x="16" y="72" fill="#f59e0b">DSLK Đôi (pPrev ↔ pNext):</text>
+            <text x="170" y="72" fill="var(--text-muted)">NULL ←</text>
+            <rect x="215" y="54" width="44" height="26" rx="6" fill="var(--bg-surface)" stroke="#f59e0b"/><text x="237" y="71" text-anchor="middle" fill="var(--text-main)">A</text>
+            <text x="268" y="71" fill="#f59e0b">⇄</text>
+            <rect x="285" y="54" width="44" height="26" rx="6" fill="var(--bg-surface)" stroke="#f59e0b"/><text x="307" y="71" text-anchor="middle" fill="var(--text-main)">B</text>
+            <text x="336" y="72" fill="var(--text-muted)">→ NULL</text>
+
+            <text x="16" y="118" fill="#10b981">DSLK Vòng (pTail→pNext = pHead):</text>
+            <rect x="225" y="100" width="44" height="26" rx="6" fill="var(--bg-surface)" stroke="#10b981"/><text x="247" y="117" text-anchor="middle" fill="var(--text-main)">A</text>
+            <line x1="269" y1="113" x2="295" y2="113" stroke="#10b981" stroke-width="2"/>
+            <rect x="295" y="100" width="44" height="26" rx="6" fill="var(--bg-surface)" stroke="#10b981"/><text x="317" y="117" text-anchor="middle" fill="var(--text-main)">B</text>
+            <path d="M 339 113 L 360 113 L 360 138 L 247 138 L 247 128" stroke="#10b981" stroke-width="1.8" fill="none"/>
+          </g>
+        </svg>`,
+      sllops: `
+        <svg viewBox="0 0 540 132" style="width:100%;max-width:540px;display:block;">
+          <text x="16" y="18" fill="var(--accent)" font-size="11" font-weight="700">Chèn X sau q: (1) X→pNext = q→pNext trước, (2) q→pNext = X sau</text>
+          <g font-weight="700" text-anchor="middle" font-size="13">
+            <rect x="40" y="58" width="60" height="36" rx="8" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="70" y="81" fill="var(--text-main)">A</text>
+            <rect x="150" y="58" width="60" height="36" rx="8" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="180" y="81" fill="var(--text-main)">B (q)</text>
+            <rect x="260" y="28" width="60" height="36" rx="8" fill="var(--emerald-soft)" stroke="#10b981"/><text x="290" y="51" fill="var(--emerald-text)">X mới</text>
+            <rect x="370" y="58" width="60" height="36" rx="8" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="400" y="81" fill="var(--text-main)">C</text>
+          </g>
+          <line x1="100" y1="76" x2="150" y2="76" stroke="var(--border-strong)" stroke-width="2"/>
+          <path d="M 210 76 L 260 46" stroke="#f59e0b" stroke-width="2" fill="none"/>
+          <path d="M 320 46 L 370 76" stroke="#10b981" stroke-width="2" fill="none"/>
+          <line x1="210" y1="84" x2="370" y2="84" stroke="#f43f5e" stroke-dasharray="4 3" stroke-width="1.6"/>
+          <text x="290" y="114" text-anchor="middle" fill="var(--amber-text)" font-size="11" font-weight="700">Bước 1: X→C  |  Bước 2: B→X  (nối trước rồi mới cắt liên kết cũ!)</text>
+        </svg>`,
+      dllrecursion: `
+        <svg viewBox="0 0 540 130" style="width:100%;max-width:540px;display:block;">
+          <g font-weight="700" font-size="12" text-anchor="middle">
+            <rect x="40" y="34" width="54" height="34" rx="8" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="67" y="55" fill="var(--text-main)">1</text>
+            <rect x="135" y="34" width="54" height="34" rx="8" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="162" y="55" fill="var(--text-main)">2</text>
+            <rect x="230" y="34" width="54" height="34" rx="8" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="257" y="55" fill="var(--text-main)">3</text>
+            <text x="320" y="55" fill="var(--text-muted)">NULL</text>
+          </g>
+          <path d="M 55 24 L 285 24" stroke="var(--accent)" stroke-width="2" marker-end="none"/>
+          <text x="170" y="16" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="700">Đi xuống (trước f(p→pNext)): in 1 → 2 → 3</text>
+          <path d="M 285 88 L 55 88" stroke="#f59e0b" stroke-width="2"/>
+          <text x="170" y="108" text-anchor="middle" fill="var(--amber-text)" font-size="11" font-weight="700">Quay về (sau f(p→pNext)): in 3 → 2 → 1</text>
+        </svg>`,
+      circqueue: `
+        <svg viewBox="0 0 540 120" style="width:100%;max-width:540px;display:block;">
+          <text x="20" y="18" fill="var(--text-muted)" font-size="11" font-weight="700">Hàng vòng mảng xoay (Slide C4 tr. 73-88): rear = (rear + 1) % max; front = (front + 1) % max</text>
+          <g font-family="Cascadia Code, monospace" font-size="12" font-weight="700" text-anchor="middle">
+            <rect x="30" y="36" width="68" height="40" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="64" y="61" fill="var(--accent)">0: D</text>
+            <rect x="106" y="36" width="68" height="40" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="140" y="61" fill="var(--accent)">1 (rear)</text>
+            <rect x="182" y="36" width="68" height="40" rx="8" fill="var(--bg-surface)" stroke="var(--border-strong)" stroke-dasharray="4 3"/><text x="216" y="61" fill="var(--text-muted)">2: trống</text>
+            <rect x="258" y="36" width="68" height="40" rx="8" fill="var(--bg-surface)" stroke="var(--border-strong)" stroke-dasharray="4 3"/><text x="292" y="61" fill="var(--text-muted)">3: trống</text>
+            <rect x="334" y="36" width="76" height="40" rx="8" fill="var(--amber-soft)" stroke="#f59e0b"/><text x="372" y="61" fill="var(--amber-text)">4 (front)</text>
+          </g>
+          <path d="M 372 78 Q 218 112 64 78" stroke="var(--accent)" stroke-width="1.8" fill="none" stroke-dasharray="4 3"/>
+          <text x="218" y="109" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="700">Hết ô cuối (max-1) quay vòng lại ô 0</text>
+        </svg>`,
+      stackqueue: `
+        <svg viewBox="0 0 540 120" style="width:100%;max-width:540px;display:block;">
+          <g font-weight="700" font-size="12" text-anchor="middle">
+            <rect x="20" y="34" width="110" height="42" rx="10" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="75" y="59" fill="var(--text-main)">S: [2, 4, 6]</text>
+            <path d="M 134 55 L 185 55" stroke="var(--accent)" stroke-width="2"/><text x="160" y="45" fill="var(--text-muted)" font-size="10">Pop→Enq</text>
+            <rect x="190" y="34" width="120" height="42" rx="10" fill="var(--amber-soft)" stroke="#f59e0b"/><text x="250" y="59" fill="var(--amber-text)">Q: [2, 4, 6]</text>
+            <path d="M 314 55 L 365 55" stroke="#f59e0b" stroke-width="2"/><text x="340" y="45" fill="var(--text-muted)" font-size="10">Deq→Push</text>
+            <rect x="370" y="34" width="130" height="42" rx="10" fill="var(--emerald-soft)" stroke="#10b981"/><text x="435" y="59" fill="var(--emerald-text)">S mới: [6, 4, 2]</text>
+          </g>
+          <text x="260" y="102" text-anchor="middle" fill="var(--text-muted)" font-size="11" font-weight="600">1 chu trình đảo ngược Stack 1 lần · 2 chu trình trở lại ban đầu</text>
+        </svg>`,
+      brackets: `
+        <svg viewBox="0 0 540 112" style="width:100%;max-width:540px;display:block;">
+          <g font-family="Cascadia Code, monospace" font-weight="700" font-size="13">
+            <rect x="20" y="18" width="230" height="70" rx="10" fill="var(--emerald-soft)" stroke="#10b981"/>
+            <text x="135" y="44" text-anchor="middle" fill="var(--emerald-text)">( [ { } ] )  ✓ Hợp lệ</text>
+            <text x="135" y="68" text-anchor="middle" fill="var(--text-soft)" font-size="11">Khớp đỉnh Stack &amp; cuối chuỗi rỗng</text>
+            <rect x="275" y="18" width="245" height="70" rx="10" fill="var(--rose-soft)" stroke="#f43f5e"/>
+            <text x="397" y="44" text-anchor="middle" fill="var(--rose-text)">( [ ) ]  ✕ Sai lồng nhau</text>
+            <text x="397" y="68" text-anchor="middle" fill="var(--text-soft)" font-size="11">Gặp ")" nhưng đỉnh Stack đang là "["</text>
+          </g>
+        </svg>`,
+      exptree: `
+        <svg viewBox="0 0 540 156" style="width:100%;max-width:540px;display:block;">
+          <line x1="150" y1="26" x2="88" y2="70" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="150" y1="26" x2="212" y2="70" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="88" y1="70" x2="52" y2="116" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="88" y1="70" x2="124" y2="116" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="212" y1="70" x2="180" y2="116" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="212" y1="70" x2="244" y2="116" stroke="var(--border-strong)" stroke-width="2"/>
+          <g text-anchor="middle" font-weight="700" font-size="13">
+            <circle cx="150" cy="26" r="16" fill="var(--amber-soft)" stroke="#f59e0b" stroke-width="2"/><text x="150" y="31" fill="var(--amber-text)">+</text>
+            <circle cx="88" cy="70" r="15" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="88" y="75" fill="var(--text-main)">/</text>
+            <circle cx="212" cy="70" r="15" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="212" y="75" fill="var(--text-main)">*</text>
+            <circle cx="52" cy="116" r="14" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="52" y="121" fill="var(--text-main)">a-b</text>
+            <circle cx="124" cy="116" r="14" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="124" y="121" fill="var(--text-main)">c</text>
+            <circle cx="180" cy="116" r="14" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="180" y="121" fill="var(--text-main)">d</text>
+            <circle cx="244" cy="116" r="14" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="244" y="121" fill="var(--text-main)">e</text>
+          </g>
+          <text x="295" y="48" fill="var(--accent)" font-size="12" font-weight="700">Gốc cây = phép toán làm CUỐI CÙNG (+)</text>
+          <text x="295" y="76" fill="var(--text-main)" font-size="12">• Duyệt LRN → Hậu tố: a b - c / d e * +</text>
+          <text x="295" y="102" fill="var(--text-main)" font-size="12">• Duyệt NLR → Tiền tố: + / - a b c * d e</text>
+        </svg>`,
+      treeheight: `
+        <svg viewBox="0 0 540 138" style="width:100%;max-width:540px;display:block;">
+          <line x1="120" y1="24" x2="75" y2="66" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="120" y1="24" x2="165" y2="66" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="75" y1="66" x2="50" y2="110" stroke="var(--border-strong)" stroke-width="2"/>
+          <line x1="75" y1="66" x2="100" y2="110" stroke="var(--border-strong)" stroke-width="2"/>
+          <g text-anchor="middle" font-weight="700" font-size="12">
+            <circle cx="120" cy="24" r="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="120" y="28" fill="var(--accent)">Gốc</text>
+            <circle cx="75" cy="66" r="13" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="75" y="70" fill="var(--text-main)">B</text>
+            <circle cx="165" cy="66" r="13" fill="var(--bg-surface)" stroke="var(--accent)"/><text x="165" y="70" fill="var(--text-main)">C</text>
+            <circle cx="50" cy="110" r="12" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="50" y="114" fill="var(--text-main)">D</text>
+            <circle cx="100" cy="110" r="12" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="100" y="114" fill="var(--text-main)">E</text>
+          </g>
+          <text x="220" y="34" fill="var(--accent)" font-size="12" font-weight="700">Slide C5 tr. 6, 40: Mức gốc = 0 → Cao = 2 (đếm cạnh)</text>
+          <text x="220" y="64" fill="var(--amber-text)" font-size="12" font-weight="700">Slide C5 tr. 16: Mức gốc = 1 → Cao = 3 (đếm mức)</text>
+          <text x="220" y="98" fill="var(--text-muted)" font-size="12">Cây hình bên: 5 nút · 3 lá (C, D, E)</text>
+        </svg>`,
+      treebuild: `
+        <svg viewBox="0 0 540 120" style="width:100%;max-width:540px;display:block;">
+          <text x="20" y="22" fill="var(--accent)" font-size="12" font-weight="700">NLR: [ B ,  A ,  D, C, F, E ]  →  Phần tử ĐẦU là gốc B</text>
+          <text x="20" y="52" fill="#f59e0b" font-size="12" font-weight="700">LNR: [ A ]  |  B  |  [ C , D , E , F ]</text>
+          <rect x="20" y="68" width="120" height="34" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="80" y="89" text-anchor="middle" fill="var(--accent)" font-size="12" font-weight="700">Cây trái: {A}</text>
+          <rect x="180" y="68" width="220" height="34" rx="8" fill="var(--amber-soft)" stroke="#f59e0b"/><text x="290" y="89" text-anchor="middle" fill="var(--amber-text)" font-size="12" font-weight="700">Cây phải: tách tiếp gốc D</text>
+        </svg>`,
+      treerec: `
+        <svg viewBox="0 0 540 112" style="width:100%;max-width:540px;display:block;">
+          <g font-family="Cascadia Code, monospace" font-size="12" font-weight="700">
+            <rect x="16" y="16" width="160" height="74" rx="10" fill="var(--bg-surface)" stroke="var(--accent)"/>
+            <text x="96" y="42" text-anchor="middle" fill="var(--accent)">Đếm tổng nút</text>
+            <text x="96" y="66" text-anchor="middle" fill="var(--text-main)">1 + f(L) + f(R)</text>
+            <rect x="190" y="16" width="165" height="74" rx="10" fill="var(--bg-surface)" stroke="#f59e0b"/>
+            <text x="272" y="42" text-anchor="middle" fill="var(--amber-text)">Đếm nút lá</text>
+            <text x="272" y="66" text-anchor="middle" fill="var(--text-main)">lá→1; else f(L)+f(R)</text>
+            <rect x="370" y="16" width="155" height="74" rx="10" fill="var(--bg-surface)" stroke="#10b981"/>
+            <text x="447" y="42" text-anchor="middle" fill="var(--emerald-text)">Chiều cao</text>
+            <text x="447" y="66" text-anchor="middle" fill="var(--text-main)">1 + max(f(L),f(R))</text>
+          </g>
+        </svg>`,
+      baseconv: `
+        <svg viewBox="0 0 540 130" style="width:100%;max-width:540px;display:block;">
+          <text x="20" y="20" fill="var(--accent)" font-size="12" font-weight="700">Đổi 57₁₀ → nhị phân: Chia 2 lấy dư Push vào Stack rồi Pop ra</text>
+          <g font-family="Cascadia Code, monospace" font-size="12" font-weight="700">
+            <text x="20" y="48" fill="var(--text-main)">57÷2=28 dư 1 → Push(1)</text>
+            <text x="20" y="70" fill="var(--text-main)">28÷2=14 dư 0 → Push(0)</text>
+            <text x="20" y="92" fill="var(--text-main)">14÷2= 7 dư 0 → Push(0) ...</text>
+            <rect x="255" y="34" width="265" height="74" rx="10" fill="var(--emerald-soft)" stroke="#10b981"/>
+            <text x="387" y="60" text-anchor="middle" fill="var(--emerald-text)">Stack bottom→top: [1,0,0,1,1,1]</text>
+            <text x="387" y="88" text-anchor="middle" fill="var(--text-main)">Pop hết ra (LIFO) → 111001₂</text>
+          </g>
+        </svg>`,
+      treearray: `
+        <svg viewBox="0 0 560 156" style="width:100%;max-width:560px;display:block;">
+          <text x="16" y="18" fill="var(--accent)" font-size="12" font-weight="700">Mảng 1-based (gốc = 1): Trái = 2i · Phải = 2i+1 · Cha = j/2</text>
+          <g font-family="Cascadia Code, monospace" font-size="12" font-weight="700" text-anchor="middle">
+            <rect x="16" y="32" width="44" height="36" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="38" y="55" fill="var(--accent)">1:Gốc</text>
+            <rect x="66" y="32" width="44" height="36" rx="6" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="88" y="55" fill="var(--text-main)">2:B</text>
+            <rect x="116" y="32" width="44" height="36" rx="6" fill="var(--bg-surface)" stroke="var(--border-strong)"/><text x="138" y="55" fill="var(--text-main)">3:C</text>
+            <rect x="166" y="32" width="44" height="36" rx="6" fill="var(--amber-soft)" stroke="#f59e0b"/><text x="188" y="55" fill="var(--amber-text)">4:D</text>
+            <rect x="216" y="32" width="44" height="36" rx="6" fill="var(--amber-soft)" stroke="#f59e0b"/><text x="238" y="55" fill="var(--amber-text)">5:E</text>
+          </g>
+          <text x="16" y="92" fill="var(--text-muted)" font-size="11">Nút i=2 (B) có con trái 2*2=4 (D), con phải 2*2+1=5 (E)</text>
+          <rect x="16" y="106" width="525" height="38" rx="8" fill="var(--bg-surface)" stroke="var(--border-strong)"/>
+          <text x="278" y="129" text-anchor="middle" fill="var(--text-main)" font-size="12" font-weight="700">Cây tổng quát → Nhị phân: pLeft = Con cực trái (CHILD) · pRight = Em kế phải (SIBLING)</text>
+        </svg>`,
+      badbst: `
+        <svg width="260" height="150" viewBox="0 0 260 150" style="display:block;">
           <line x1="130" y1="26" x2="76" y2="74" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="130" y1="26" x2="184" y2="74" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="76" y1="74" x2="44" y2="122" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="76" y1="74" x2="108" y2="122" stroke="#f43f5e" stroke-width="2.2"/>
-          <circle cx="130" cy="26" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="130" y="31" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">8</text>
-          <circle cx="76" cy="74" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="76" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">3</text>
-          <circle cx="184" cy="74" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="184" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">12</text>
-          <circle cx="44" cy="122" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="44" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">1</text>
+          <circle cx="130" cy="26" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="130" y="31" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">8</text>
+          <circle cx="76" cy="74" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="76" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">3</text>
+          <circle cx="184" cy="74" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="184" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">12</text>
+          <circle cx="44" cy="122" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="44" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">1</text>
           <circle cx="108" cy="122" r="16" fill="var(--rose-soft)" stroke="#f43f5e" stroke-width="2.2"/><text x="108" y="127" text-anchor="middle" fill="var(--rose-text)" font-size="13" font-weight="700">10</text>
-        </svg>
-      `;
-    }
-    if (kind === 'bst') {
-      return `
-        <svg width="260" height="150" viewBox="0 0 260 150" style="display:block;margin-top:8px;">
+        </svg>`,
+      bst: `
+        <svg width="260" height="150" viewBox="0 0 260 150" style="display:block;">
           <line x1="130" y1="26" x2="76" y2="74" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="130" y1="26" x2="184" y2="74" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="76" y1="74" x2="44" y2="122" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="76" y1="74" x2="108" y2="122" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="184" y1="74" x2="216" y2="122" stroke="var(--border-strong)" stroke-width="2"/>
-          <circle cx="130" cy="26" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="130" y="31" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">8</text>
-          <circle cx="76" cy="74" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="76" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">3</text>
-          <circle cx="184" cy="74" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="184" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">10</text>
-          <circle cx="44" cy="122" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="44" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">1</text>
-          <circle cx="108" cy="122" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="108" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">6</text>
-          <circle cx="216" cy="122" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="216" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">14</text>
-        </svg>
-      `;
-    }
-    if (kind === 'avldelete') {
-      return `
-        <svg width="260" height="150" viewBox="0 0 260 150" style="display:block;margin-top:8px;">
+          <circle cx="130" cy="26" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="130" y="31" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">8</text>
+          <circle cx="76" cy="74" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="76" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">3</text>
+          <circle cx="184" cy="74" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="184" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">10</text>
+          <circle cx="44" cy="122" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="44" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">1</text>
+          <circle cx="108" cy="122" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="108" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">6</text>
+          <circle cx="216" cy="122" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="216" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">14</text>
+        </svg>`,
+      avldelete: `
+        <svg width="260" height="150" viewBox="0 0 260 150" style="display:block;">
           <line x1="130" y1="26" x2="76" y2="74" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="130" y1="26" x2="184" y2="74" stroke="#f43f5e" stroke-dasharray="4 3" stroke-width="2"/>
           <line x1="76" y1="74" x2="44" y2="122" stroke="var(--border-strong)" stroke-width="2"/>
           <line x1="76" y1="74" x2="108" y2="122" stroke="var(--border-strong)" stroke-width="2"/>
-          <circle cx="130" cy="26" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="130" y="31" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">30</text>
-          <circle cx="76" cy="74" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="76" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">20</text>
+          <circle cx="130" cy="26" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="130" y="31" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">30</text>
+          <circle cx="76" cy="74" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="76" y="79" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">20</text>
           <circle cx="184" cy="74" r="16" fill="var(--rose-soft)" stroke="#f43f5e" stroke-dasharray="4 3" stroke-width="2"/><text x="184" y="79" text-anchor="middle" fill="var(--rose-text)" font-size="13" font-weight="700">40</text>
-          <circle cx="44" cy="122" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="44" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">10</text>
-          <circle cx="108" cy="122" r="16" fill="var(--bg-surface-2)" stroke="var(--accent)" stroke-width="2"/><text x="108" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">25</text>
-        </svg>
-      `;
+          <circle cx="44" cy="122" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="44" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">10</text>
+          <circle cx="108" cy="122" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2"/><text x="108" y="127" text-anchor="middle" fill="var(--text-main)" font-size="13" font-weight="700">25</text>
+        </svg>`
+    };
+    const svg = svgs[kind];
+    return svg ? `<div class="svg-diagram-box">${svg}</div>` : '';
+  }
+
+  function buildStepsForPreset(preset) {
+    if (!preset) return [];
+    const { mode, arr, key, bubbleDir } = preset;
+    if (mode === 'postfix') return Algo.postfix(arr);
+    const nums = String(arr || '').split(/[\s,;]+/).filter(Boolean).map((x) => parseInt(x, 10));
+    if (mode === 'binary') return Algo.binary(nums, parseInt(key, 10));
+    if (mode === 'stack' || mode === 'queue') return Algo.operations(nums, mode === 'queue');
+    if (mode === 'linked') return Algo.linkedPairs(nums);
+    if (mode === 'quick') return Algo.quickSort(nums);
+    if (mode === 'bst' || mode === 'avl') {
+      const rem = (key !== undefined && key !== '') ? parseInt(key, 10) : null;
+      return Algo.treeTrace(nums, mode === 'avl', rem, { replaceSide: store.getPref('treeReplaceSide') });
     }
-    return '';
+    const cap = mode.charAt(0).toUpperCase() + mode.slice(1);
+    return Algo.sort(nums, cap, { direction: bubbleDir || store.getPref('bubbleDir') });
   }
 
   function renderLessonDetail() {
+    if (miniPlayTimer) { clearTimeout(miniPlayTimer); miniPlayTimer = null; }
     const l = Lessons[selectedLessonId - 1] || Lessons[0];
     if (!l) return;
-    const simPreset = LESSON_SIM_MAP[l.id];
+    const simPreset = l.miniSim || LESSON_SIM_MAP[l.id];
 
     lessonDetail.innerHTML = `
       <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
         <div>
-          <span class="brand-pill">${esc(l.group)}</span>
+          <span class="brand-pill">${esc(l.chapter || l.group)}</span>
           <h2 style="margin:6px 0 0;font-size:21px;font-weight:700;">${esc(lessonLabel(l.id))}</h2>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
           <button id="btn-lesson-practice" class="btn btn-primary">Luyện dạng này</button>
-          ${simPreset ? '<button id="btn-lesson-sim" class="btn">Chạy mô phỏng 60fps ▶</button>' : ''}
+          ${simPreset ? '<button id="btn-lesson-sim" class="btn">Mở mô phỏng toàn màn hình ↗</button>' : ''}
         </div>
       </div>
 
       <div class="surface-card" style="padding:18px 20px;">
-        <div class="section-tag">Bài mẫu</div>
+        <div class="section-tag">Bài mẫu &amp; Minh họa trực quan</div>
         <p style="margin:0;font-size:14px;line-height:1.65;">${esc(l.problem)}</p>
         ${l.diagram && l.diagram.length ? renderLessonDiagramSvg(l.diagram[0]) : ''}
       </div>
 
-      ${l.code ? `
+      ${l.miniSim ? `
+        <div class="surface-card mini-sim-card">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
+            <div class="section-tag" style="margin:0;">Mô phỏng 60fps trực tiếp ngay trong bài học</div>
+            <span id="mini-step-label" class="font-mono-code" style="font-size:12px;font-weight:700;color:var(--accent);">Bước 1</span>
+          </div>
+          <div id="mini-canvas-wrap" class="mini-sim-canvas-wrap">
+            <canvas id="mini-canvas"></canvas>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
+            <span id="mini-note" style="font-size:12px;color:var(--text-soft);flex:1;min-width:200px;"></span>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button id="mini-prev" class="btn">◀ Lùi</button>
+              <button id="mini-play" class="btn btn-primary">▶ Tự chạy</button>
+              <button id="mini-next" class="btn">Tiếp ▶</button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${(l.code || l.codeNote) ? `
         <div class="surface-card" style="padding:18px 20px;">
-          <div class="section-tag">Đoạn mã minh họa</div>
-          <pre class="code-block">${esc(l.code)}</pre>
+          <div class="section-tag">Đọc hiểu code chuẩn Slide IUH</div>
+          ${l.code ? `<pre class="code-block">${esc(l.code)}</pre>` : ''}
+          ${l.codeNote ? `<div class="code-note-box"><strong>Điểm cần nhìn khi đọc đề:</strong> ${esc(l.codeNote)}</div>` : ''}
         </div>
       ` : ''}
 
@@ -476,9 +748,66 @@
       </div>
     `;
 
+    if (l.miniSim) {
+      const mSteps = buildStepsForPreset(l.miniSim);
+      let mIdx = 0;
+      let mPlaying = false;
+      const mWrap = document.getElementById('mini-canvas-wrap');
+      const mCanvas = document.getElementById('mini-canvas');
+      miniViz = new Visualizer(mCanvas, mWrap, () => appEl.getAttribute('data-theme'));
+      miniViz.avlBfMode = store.getPref('avlBfMode');
+      miniViz.setData(l.miniSim.mode, mSteps);
+
+      const syncMini = () => {
+        const st = mSteps[mIdx];
+        if (!st) return;
+        document.getElementById('mini-step-label').textContent = `Bước ${mIdx + 1}/${mSteps.length} · ${st.title}`;
+        document.getElementById('mini-note').textContent = st.note;
+      };
+      syncMini();
+      requestAnimationFrame(() => { if (miniViz) { miniViz.resize(); miniViz.renderCurrent(); } });
+
+      const stopMini = () => {
+        mPlaying = false;
+        if (miniPlayTimer) { clearTimeout(miniPlayTimer); miniPlayTimer = null; }
+        const btn = document.getElementById('mini-play');
+        if (btn) { btn.textContent = '▶ Tự chạy'; btn.className = 'btn btn-primary'; }
+      };
+
+      const tickMini = () => {
+        if (!mPlaying) return;
+        if (mIdx >= mSteps.length - 1) { stopMini(); return; }
+        const prev = mIdx++;
+        syncMini();
+        miniViz.transitionTo(prev, mIdx);
+        miniPlayTimer = setTimeout(tickMini, 1050);
+      };
+
+      document.getElementById('mini-prev').addEventListener('click', () => {
+        stopMini();
+        if (mIdx > 0) { const p = mIdx--; syncMini(); miniViz.transitionTo(p, mIdx); }
+      });
+      document.getElementById('mini-next').addEventListener('click', () => {
+        stopMini();
+        if (mIdx < mSteps.length - 1) { const p = mIdx++; syncMini(); miniViz.transitionTo(p, mIdx); }
+      });
+      document.getElementById('mini-play').addEventListener('click', () => {
+        if (mPlaying) { stopMini(); return; }
+        if (mIdx >= mSteps.length - 1) { mIdx = 0; syncMini(); miniViz.transitionTo(0, 0, true); }
+        mPlaying = true;
+        const btn = document.getElementById('mini-play');
+        btn.textContent = '⏸ Tạm dừng';
+        btn.className = 'btn btn-amber';
+        tickMini();
+      });
+    } else {
+      miniViz = null;
+    }
+
     document.getElementById('btn-lesson-practice').addEventListener('click', () => openPractice(l.id, null));
     if (simPreset) {
       document.getElementById('btn-lesson-sim').addEventListener('click', () => {
+        if (simPreset.bubbleDir) store.setPref('bubbleDir', simPreset.bubbleDir);
         switchTab('sim');
         selectSimMode(simPreset.mode, simPreset.arr, simPreset.key);
       });
@@ -493,20 +822,21 @@
   }
 
   // =========================================================
-  // 3. SIMULATOR TAB (ALL 11 MODES, 60FPS)
+  // 3. SIMULATOR TAB (ALL 12 MODES, 60FPS)
   // =========================================================
   const SIM_MODES = [
-    { id: 'bubble', label: 'Bubble Sort', help: 'Nhập 1–12 số nguyên. Hai phần tử hoán đổi sẽ trượt vòng cung mượt mà.' },
+    { id: 'bubble', label: 'Bubble Sort', help: 'Nhập 1–12 số nguyên. Hỗ trợ chiều Phải → Trái (Slide IUH) và Trái → Phải, trượt vòng cung mượt mà.' },
     { id: 'selection', label: 'Selection Sort', help: 'Quét tìm chỉ số min trong đoạn chưa sắp rồi đổi 1 lần cuối lượt.' },
-    { id: 'insertion', label: 'Insertion Sort', help: 'Phần tử x nhấc lên vùng tạm, các số lớn hơn trượt sang phải rồi chèn vào pos + 1.' },
-    { id: 'interchange', label: 'Interchange Sort', help: 'Cố định i, so từng j > i và đổi chỗ ngay với a[i] nếu a[i] > a[j].' },
-    { id: 'binary', label: 'Tìm nhị phân', help: 'Nhập dãy tăng dần. Ô khóa: giá trị cần tìm trong đoạn đóng [low, high].', keyLabel: 'Khóa tìm:' },
+    { id: 'insertion', label: 'Insertion Sort', help: 'Phần tử x nhấc lên vùng tạm (pos), các số lớn hơn trượt sang phải rồi chèn vào pos + 1.' },
+    { id: 'interchange', label: 'Interchange Sort', help: 'Cố định i, tô sáng cặp so sánh (a[i], a[j]) trước rồi mới sang bước đổi chỗ nếu nghịch thế.' },
+    { id: 'quick', label: 'Quick Sort', help: 'Quick Sort (Slide IUH): chọn mốc giữa x = a[(l+r)/2], phân hoạch và đệ quy hai đoạn.' },
+    { id: 'binary', label: 'Tìm nhị phân', help: 'Nhập dãy tăng dần. Ô khóa: giá trị cần tìm trong đoạn đóng [left, right].', keyLabel: 'Khóa tìm:' },
     { id: 'stack', label: 'Stack Push/Pop', help: 'Số ≥ 0: push(v) vào đỉnh · Số -1: pop() lấy phần tử trên đỉnh (LIFO).' },
     { id: 'queue', label: 'Queue Enq/Deq', help: 'Số ≥ 0: enqueue(v) vào rear · Số -1: dequeue() lấy ở front (FIFO).' },
     { id: 'postfix', label: 'Hậu tố', help: 'Nhập token cách bởi khoảng trắng (hỗ trợ + - * /, chia nguyên). VD: 8 3 2 * - 4 +' },
-    { id: 'linked', label: 'DSLK đổi cặp', help: 'Đổi dữ liệu từng cặp nút (0,1), (2,3)... không đổi liên kết next.' },
-    { id: 'bst', label: 'Cây BST', help: 'Khóa phân biệt chèn trái→phải. Ô nhỏ (tùy chọn): khóa xóa sau khi chèn.', keyLabel: 'Khóa xóa:' },
-    { id: 'avl', label: 'Cây AVL (Xoay)', help: 'Dò từ gốc xuống để chèn, theo dõi BF và xem xoay LL/RR/LR/RL trượt mượt.', keyLabel: 'Khóa xóa:' }
+    { id: 'linked', label: 'DSLK đổi cặp', help: 'Hiển thị cặp nút (i, i+1) trước rồi mới đổi dữ liệu từng cặp, không đổi liên kết next.' },
+    { id: 'bst', label: 'Cây BST', help: 'Dò từ gốc xuống để chèn; khi xóa nút 2 con có thể chọn thế mạng Phải nhất cây trái / Trái nhất cây phải.', keyLabel: 'Khóa xóa:' },
+    { id: 'avl', label: 'Cây AVL (Xoay)', help: 'Mặc định CSCB = h(Phải) − h(Trái) theo Slide IUH; hỗ trợ xoay LL/RR/LR/RL & chọn thế mạng 2 con.', keyLabel: 'Khóa xóa:' }
   ];
 
   let simMode = 'avl';
@@ -516,6 +846,7 @@
   let simPlayTimer = null;
 
   const simModesEl = document.getElementById('sim-modes');
+  const simCtxBarEl = document.getElementById('sim-ctx-bar');
   const simHelpEl = document.getElementById('sim-help');
   const simInputEl = document.getElementById('sim-input');
   const simKeyWrapEl = document.getElementById('sim-key-wrap');
@@ -529,11 +860,12 @@
   const stepSliderEl = document.getElementById('step-slider');
   const btnPlayEl = document.getElementById('btn-play');
 
-  const simViz = new Visualizer(
+  simViz = new Visualizer(
     document.getElementById('sim-canvas'),
     document.getElementById('canvas-wrap'),
     () => appEl.getAttribute('data-theme')
   );
+  simViz.avlBfMode = store.getPref('avlBfMode');
 
   function renderSimModePills() {
     simModesEl.innerHTML = SIM_MODES.map((m) =>
@@ -558,7 +890,7 @@
     });
   }
 
-  function buildSimSteps() {
+  function buildSimSteps(keepIndex = 0) {
     store.setSimInput(simMode, simInputEl.value, simKeyEl.value);
     simErrorEl.style.display = 'none';
     try {
@@ -585,7 +917,15 @@
             rem = parseInt(rawKey, 10);
           }
           if (new Set(vals).size !== vals.length) throw new Error('Các khóa cây phải phân biệt.');
-          nextSteps = Algo.treeTrace(vals, simMode === 'avl', rem);
+          nextSteps = Algo.treeTrace(vals, simMode === 'avl', rem, {
+            replaceSide: store.getPref('treeReplaceSide')
+          });
+        } else if (simMode === 'quick') {
+          nextSteps = Algo.quickSort(vals);
+        } else if (simMode === 'bubble') {
+          nextSteps = Algo.sort(vals, 'Bubble', {
+            direction: store.getPref('bubbleDir')
+          });
         } else {
           const cap = simMode.charAt(0).toUpperCase() + simMode.slice(1);
           nextSteps = Algo.sort(vals, cap);
@@ -594,15 +934,95 @@
 
       stopSimPlay();
       simSteps = nextSteps;
-      simIndex = 0;
+      const targetIdx = typeof keepIndex === 'number' && Number.isFinite(keepIndex) ? keepIndex : 0;
+      simIndex = Math.max(0, Math.min(targetIdx, Math.max(0, simSteps.length - 1)));
       stepSliderEl.min = 0;
       stepSliderEl.max = Math.max(0, simSteps.length - 1);
-      stepSliderEl.value = 0;
-      simViz.setData(simMode, simSteps);
+      stepSliderEl.value = simIndex;
+      simViz.avlBfMode = store.getPref('avlBfMode');
       updateSimReadout();
+      simViz.setData(simMode, simSteps);
+      if (simIndex > 0) simViz.transitionTo(simIndex, simIndex, true);
     } catch (err) {
       simErrorEl.textContent = err.message;
       simErrorEl.style.display = 'inline';
+    }
+  }
+
+  function renderSimCtxBar() {
+    if (!simCtxBarEl) return;
+    const prevH = simCtxBarEl.offsetHeight;
+    const parts = [];
+    const st = simSteps[simIndex];
+
+    if (simMode === 'bubble') {
+      const bdir = store.getPref('bubbleDir') || 'rtl';
+      parts.push(`
+        <div class="ctx-group">
+          <span class="ctx-label">Chiều nổi bọt:</span>
+          <button type="button" class="pill-btn ${bdir === 'rtl' ? 'active' : ''}" data-bdir="rtl">Phải → Trái (Slide IUH)</button>
+          <button type="button" class="pill-btn ${bdir === 'ltr' ? 'active' : ''}" data-bdir="ltr">Trái → Phải</button>
+        </div>
+      `);
+    }
+
+    if (simMode === 'avl') {
+      const bfMode = store.getPref('avlBfMode') || 'iuh';
+      parts.push(`
+        <div class="ctx-group">
+          <span class="ctx-label">Chỉ số cân bằng:</span>
+          <button type="button" class="pill-btn ${bfMode === 'iuh' ? 'active' : ''}" data-bf="iuh">CSCB = h(R)−h(L) (Slide IUH)</button>
+          <button type="button" class="pill-btn ${bfMode === 'std' ? 'active' : ''}" data-bf="std">BF = h(L)−h(R)</button>
+        </div>
+      `);
+    }
+
+    if ((simMode === 'bst' || simMode === 'avl') && st && st.deleteChoice) {
+      const dc = st.deleteChoice;
+      parts.push(`
+        <div class="delete-choice-banner">
+          <span class="ctx-label">Xóa nút ${dc.targetVal} (2 con) — Chọn thế mạng:</span>
+          <button type="button" class="pill-btn ${dc.selected === 'left' ? 'active' : ''}" data-rside="left">Phải nhất cây trái (${dc.leftVal})</button>
+          <button type="button" class="pill-btn ${dc.selected === 'right' ? 'active' : ''}" data-rside="right">Trái nhất cây phải (${dc.rightVal})</button>
+        </div>
+      `);
+    }
+
+    if (!parts.length) {
+      simCtxBarEl.style.display = 'none';
+      simCtxBarEl.innerHTML = '';
+    } else {
+      simCtxBarEl.style.display = 'flex';
+      simCtxBarEl.innerHTML = parts.join('');
+
+      simCtxBarEl.querySelectorAll('[data-bdir]').forEach((b) => {
+        b.addEventListener('click', () => {
+          store.setPref('bubbleDir', b.dataset.bdir);
+          buildSimSteps(0);
+        });
+      });
+
+      simCtxBarEl.querySelectorAll('[data-bf]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const mode = b.dataset.bf;
+          store.setPref('avlBfMode', mode);
+          simViz.avlBfMode = mode;
+          renderSimCtxBar();
+          simViz.renderCurrent();
+        });
+      });
+
+      simCtxBarEl.querySelectorAll('[data-rside]').forEach((b) => {
+        b.addEventListener('click', () => {
+          stopSimPlay();
+          store.setPref('treeReplaceSide', b.dataset.rside);
+          buildSimSteps(simIndex);
+        });
+      });
+    }
+
+    if (prevH !== simCtxBarEl.offsetHeight && currentTab === 'sim') {
+      simViz.resize();
     }
   }
 
@@ -616,6 +1036,7 @@
     stepVarsEl.innerHTML = (st.vars || []).map((v) =>
       `<span class="font-mono-code" style="font-size:12px;padding:3px 9px;border-radius:8px;background:var(--bg-surface-2);border:1px solid var(--border-subtle);color:var(--text-soft);">${esc(v)}</span>`
     ).join('');
+    renderSimCtxBar();
   }
 
   function goSimStep(nextIdx, instant = false) {
@@ -689,9 +1110,9 @@
 
   simInputEl.addEventListener('input', () => store.setSimInput(simMode, simInputEl.value, simKeyEl.value));
   simKeyEl.addEventListener('input', () => store.setSimInput(simMode, simInputEl.value, simKeyEl.value));
-  simInputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') buildSimSteps(); });
-  simKeyEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') buildSimSteps(); });
-  document.getElementById('sim-apply').addEventListener('click', buildSimSteps);
+  simInputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') buildSimSteps(0); });
+  simKeyEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') buildSimSteps(0); });
+  document.getElementById('sim-apply').addEventListener('click', () => buildSimSteps(0));
 
   document.getElementById('sim-random').addEventListener('click', () => {
     if (simMode === 'binary') {
@@ -717,10 +1138,11 @@
       simInputEl.value = Array.from(set).join(', ');
       simKeyEl.value = '';
     } else {
-      const arr = Array.from({ length: 6 }, () => Math.floor(Math.random() * 25) + 1);
+      const len = simMode === 'quick' ? 8 : 6;
+      const arr = Array.from({ length: len }, () => Math.floor(Math.random() * 25) + 1);
       simInputEl.value = arr.join(', ');
     }
-    buildSimSteps();
+    buildSimSteps(0);
   });
 
   document.getElementById('btn-first').addEventListener('click', () => { stopSimPlay(); goSimStep(0); });
@@ -754,17 +1176,19 @@
   // TRACE MODAL (for non-simulator traces like Linear Search)
   // =========================================================
   const traceModal = document.getElementById('trace-modal');
-  const modalViz = new Visualizer(
+  modalViz = new Visualizer(
     document.getElementById('modal-canvas'),
     document.getElementById('modal-canvas-wrap'),
     () => appEl.getAttribute('data-theme')
   );
+  modalViz.avlBfMode = store.getPref('avlBfMode');
   let modalSteps = [];
   let modalIdx = 0;
 
   function openTraceModal(steps, title) {
     modalSteps = steps;
     modalIdx = 0;
+    modalViz.avlBfMode = store.getPref('avlBfMode');
     document.getElementById('modal-title').textContent = title || 'Mô phỏng lời giải';
     traceModal.classList.add('open');
     requestAnimationFrame(() => {
@@ -839,7 +1263,7 @@
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
             <select id="pq-type-select" class="select-field" style="max-width:340px;">
-              <option value="0" ${practiceFilter === 0 ? 'selected' : ''}>Tất cả 29 dạng · trộn ngẫu nhiên</option>
+              <option value="0" ${practiceFilter === 0 ? 'selected' : ''}>Tất cả 32 dạng · trộn ngẫu nhiên</option>
               ${Lessons.map((l) => `<option value="${l.id}" ${practiceFilter === l.id ? 'selected' : ''}>${esc(lessonLabel(l.id))}</option>`).join('')}
             </select>
             <button id="pq-new-btn" class="btn btn-primary btn-lg">Câu mới</button>
@@ -922,6 +1346,8 @@
     document.getElementById('pq-sim-btn').addEventListener('click', () => {
       if (!practiceChecked) return;
       if (practiceQ.simPreset) {
+        if (practiceQ.simPreset.bubbleDir) store.setPref('bubbleDir', practiceQ.simPreset.bubbleDir);
+        if (practiceQ.simPreset.replaceSide) store.setPref('treeReplaceSide', practiceQ.simPreset.replaceSide);
         switchTab('sim');
         selectSimMode(practiceQ.simPreset.mode, practiceQ.simPreset.arr, practiceQ.simPreset.key);
       } else if (practiceQ.trace && practiceQ.trace.length) {
@@ -1302,11 +1728,34 @@
     selectSimMode,
     applyTheme,
     goSimStep,
+    selectLesson: (id) => {
+      selectedLessonId = id;
+      renderLessonList();
+      renderLessonDetail();
+    },
+    setBubbleDir: (dir) => {
+      store.setPref('bubbleDir', dir);
+      buildSimSteps(0);
+    },
+    setAvlBfMode: (mode) => {
+      store.setPref('avlBfMode', mode);
+      simViz.avlBfMode = mode;
+      renderSimCtxBar();
+      simViz.renderCurrent();
+    },
+    setTreeReplaceSide: (side, keepIdx = simIndex) => {
+      store.setPref('treeReplaceSide', side);
+      buildSimSteps(keepIdx);
+    },
     getSimState: () => ({ mode: simMode, index: simIndex, count: simSteps.length, steps: simSteps }),
     renderSimAtProgress: (fromIdx, toIdx, rawT) => {
       simIndex = toIdx;
       updateSimReadout();
-      simViz.renderFrame(simSteps[fromIdx], simSteps[toIdx], rawT, Math.abs(toIdx - fromIdx) === 1);
+      if (fromIdx === toIdx && rawT >= 1) {
+        simViz.transitionTo(toIdx, toIdx, true);
+      } else {
+        simViz.renderFrame(simSteps[fromIdx], simSteps[toIdx], rawT, Math.abs(toIdx - fromIdx) === 1);
+      }
     }
   };
 })();

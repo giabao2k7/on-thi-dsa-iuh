@@ -10,6 +10,7 @@
     selection: { arr: '6, 2, 9, 1, 5, 3', key: '' },
     insertion: { arr: '7, 3, 5, 1, 6, 2', key: '' },
     interchange: { arr: '5, 3, 4, 1, 6, 2', key: '' },
+    quick: { arr: '12, 2, 8, 5, 1, 6, 4, 15', key: '' },
     binary: { arr: '2, 5, 8, 11, 14, 17, 20', key: '14' },
     stack: { arr: '5, 8, -1, 2, 7, -1', key: '' },
     queue: { arr: '5, 8, -1, 2, 7, -1', key: '' },
@@ -27,6 +28,14 @@
     return out;
   }
 
+  function defaultPrefs() {
+    return {
+      bubbleDir: 'rtl',
+      avlBfMode: 'iuh',
+      treeReplaceSide: 'right'
+    };
+  }
+
   function defaultState() {
     return {
       version: 2,
@@ -34,6 +43,7 @@
       attempts: [],
       mistakes: [],
       exams: [],
+      prefs: defaultPrefs(),
       simModeState: cloneDefaults()
     };
   }
@@ -69,6 +79,7 @@
           attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
           mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes : [],
           exams: Array.isArray(parsed.exams) ? parsed.exams : [],
+          prefs: { ...defaultPrefs(), ...(parsed.prefs || {}) },
           simModeState: { ...cloneDefaults(), ...(parsed.simModeState || {}) }
         };
       } catch (e) {
@@ -88,6 +99,16 @@
 
     setTheme(theme) {
       this.state.theme = theme === 'light' ? 'light' : 'dark';
+      this.save();
+    }
+
+    getPref(key) {
+      return (this.state.prefs && this.state.prefs[key]) || defaultPrefs()[key];
+    }
+
+    setPref(key, val) {
+      if (!this.state.prefs) this.state.prefs = defaultPrefs();
+      this.state.prefs[key] = val;
       this.save();
     }
 

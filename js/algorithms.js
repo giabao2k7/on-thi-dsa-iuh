@@ -1,5 +1,5 @@
-// DSA Studio IUH — Complete Algorithm & Trace Engine (11 modes)
-// Faithfully implements all algorithms from DSA_Studio with persistent UIDs and smooth animation metadata.
+// DSA Studio IUH — Complete Algorithm & Trace Engine (12 modes)
+// Aligned with IUH Data Structures & Algorithms slides (C2_1, C2_2, C3, C4, C5).
 
 (function (root) {
   'use strict';
@@ -38,6 +38,9 @@
       swap: opts.swap ? opts.swap.slice() : [],
       sorted: opts.sorted ? opts.sorted.slice() : [],
       pointers: opts.pointers ? { ...opts.pointers } : {},
+      range: opts.range ? opts.range.slice() : null,
+      pivotVal: opts.pivotVal !== undefined ? opts.pivotVal : null,
+      pivotIdx: opts.pivotIdx !== undefined ? opts.pivotIdx : null,
       low: opts.low !== undefined ? opts.low : 0,
       high: opts.high !== undefined ? opts.high : values.length - 1,
       mid: opts.mid !== undefined ? opts.mid : null,
@@ -45,60 +48,107 @@
     };
   }
 
-  // 1-4. SORTING: Bubble, Selection, Insertion, Interchange
-  function sort(input, mode) {
+  // 1-4. SORTING: Bubble (LTR & IUH RTL), Selection, Insertion, Interchange (2-step Compare -> Swap)
+  function sort(input, mode, opts = {}) {
     const items = input.map((val, idx) => ({ uid: idx + 1, val }));
     const n = items.length;
+    const bubbleDir = opts.direction || 'ltr';
+
     const steps = [snapArray({
       title: 'Bắt đầu',
-      note: 'Chỉ số bắt đầu từ 0. Sắp xếp tăng dần.',
+      note: mode === 'Bubble' && bubbleDir === 'rtl'
+        ? 'Bubble Sort (Slide IUH): duyệt j từ phải sang trái (n-1 → i+1), đẩy số nhỏ nhất lên đầu.'
+        : 'Chỉ số bắt đầu từ 0. Sắp xếp tăng dần.',
       slots: items,
       vars: [`n = ${n}`],
       sorted: mode === 'Insertion' ? [0] : []
     })];
 
     if (mode === 'Bubble') {
-      for (let i = 0; i < n - 1; i++) {
-        const sortedNow = [];
-        for (let k = n - i; k < n; k++) sortedNow.push(k);
-        for (let j = 0; j < n - i - 1; j++) {
-          const needSwap = items[j].val > items[j + 1].val;
-          steps.push(snapArray({
-            title: 'So sánh cặp kề',
-            note: `${items[j].val}${needSwap ? ' > ' : ' ≤ '}${items[j + 1].val}${needSwap ? ': cần đổi chỗ.' : ': giữ nguyên.'}`,
-            slots: items,
-            vars: [`i = ${i}`, `j = ${j}`],
-            active: [j, j + 1],
-            compare: [j, j + 1],
-            sorted: sortedNow,
-            pointers: { j, 'j+1': j + 1 }
-          }));
-          if (needSwap) {
-            const t = items[j];
-            items[j] = items[j + 1];
-            items[j + 1] = t;
+      if (bubbleDir === 'rtl') {
+        for (let i = 0; i < n - 1; i++) {
+          const sortedNow = Array.from({ length: i }, (_, k) => k);
+          for (let j = n - 1; j > i; j--) {
+            const needSwap = items[j].val < items[j - 1].val;
             steps.push(snapArray({
-              title: 'Đổi hai phần tử',
-              note: 'Mỗi lần đổi kề loại bỏ một nghịch thế.',
+              title: 'So sánh cặp kề (Phải → Trái)',
+              note: `a[${j}] = ${items[j].val}${needSwap ? ' < ' : ' ≥ '}a[${j - 1}] = ${items[j - 1].val}${needSwap ? ': cần đẩy số nhỏ hơn sang trái.' : ': giữ nguyên.'}`,
+              slots: items,
+              vars: [`i = ${i}`, `j = ${j}`, 'Chiều: Phải → Trái'],
+              active: [j - 1, j],
+              compare: [j - 1, j],
+              sorted: sortedNow,
+              pointers: { 'j-1': j - 1, j }
+            }));
+            if (needSwap) {
+              const t = items[j];
+              items[j] = items[j - 1];
+              items[j - 1] = t;
+              steps.push(snapArray({
+                title: 'Đổi hai phần tử',
+                note: `Đưa ${items[j - 1].val} nổi dần về đầu dãy.`,
+                slots: items,
+                vars: [`i = ${i}`, `j = ${j}`],
+                active: [j - 1, j],
+                swap: [j - 1, j],
+                sorted: sortedNow,
+                pointers: { 'j-1': j - 1, j }
+              }));
+            }
+          }
+          const doneSorted = Array.from({ length: i + 1 }, (_, k) => k);
+          steps.push(snapArray({
+            title: `Xong lượt i = ${i}`,
+            note: `Phần tử nhỏ nhất đoạn (${items[i].val}) đã nổi về vị trí đầu ${i}.`,
+            slots: items,
+            vars: [`i = ${i}`],
+            active: [i],
+            sorted: doneSorted
+          }));
+        }
+      } else {
+        for (let i = 0; i < n - 1; i++) {
+          const sortedNow = [];
+          for (let k = n - i; k < n; k++) sortedNow.push(k);
+          for (let j = 0; j < n - i - 1; j++) {
+            const needSwap = items[j].val > items[j + 1].val;
+            steps.push(snapArray({
+              title: 'So sánh cặp kề',
+              note: `${items[j].val}${needSwap ? ' > ' : ' ≤ '}${items[j + 1].val}${needSwap ? ': cần đổi chỗ.' : ': giữ nguyên.'}`,
               slots: items,
               vars: [`i = ${i}`, `j = ${j}`],
               active: [j, j + 1],
-              swap: [j, j + 1],
+              compare: [j, j + 1],
               sorted: sortedNow,
               pointers: { j, 'j+1': j + 1 }
             }));
+            if (needSwap) {
+              const t = items[j];
+              items[j] = items[j + 1];
+              items[j + 1] = t;
+              steps.push(snapArray({
+                title: 'Đổi hai phần tử',
+                note: 'Mỗi lần đổi kề loại bỏ một nghịch thế.',
+                slots: items,
+                vars: [`i = ${i}`, `j = ${j}`],
+                active: [j, j + 1],
+                swap: [j, j + 1],
+                sorted: sortedNow,
+                pointers: { j, 'j+1': j + 1 }
+              }));
+            }
           }
+          const doneSorted = [];
+          for (let k = n - 1 - i; k < n; k++) doneSorted.push(k);
+          steps.push(snapArray({
+            title: `Xong lượt i = ${i}`,
+            note: `Phần tử lớn nhất đoạn (${items[n - 1 - i].val}) đã về cuối đoạn.`,
+            slots: items,
+            vars: [`i = ${i}`],
+            active: [n - 1 - i],
+            sorted: doneSorted
+          }));
         }
-        const doneSorted = [];
-        for (let k = n - 1 - i; k < n; k++) doneSorted.push(k);
-        steps.push(snapArray({
-          title: `Xong lượt i = ${i}`,
-          note: `Phần tử lớn nhất đoạn (${items[n - 1 - i].val}) đã về cuối đoạn.`,
-          slots: items,
-          vars: [`i = ${i}`],
-          active: [n - 1 - i],
-          sorted: doneSorted
-        }));
       }
     } else if (mode === 'Selection') {
       for (let i = 0; i < n - 1; i++) {
@@ -148,27 +198,35 @@
         const sortedNow = Array.from({ length: i }, (_, k) => k);
         for (let j = i + 1; j < n; j++) {
           const needSwap = items[i].val > items[j].val;
-          const note = `${items[i].val}${needSwap ? ' > ' : ' ≤ '}${items[j].val}. Dùng giá trị a[i] mới cho lần tiếp theo.`;
+          steps.push(snapArray({
+            title: `So sánh a[${i}] và a[${j}]`,
+            note: `${items[i].val}${needSwap ? ' > ' : ' ≤ '}${items[j].val}${needSwap ? `: cần đổi ngay với a[${i}].` : ': giữ nguyên vị trí.'}`,
+            slots: items,
+            vars: [`i = ${i}`, `j = ${j}`, `a[i] = ${items[i].val}`, `a[j] = ${items[j].val}`],
+            active: [i, j],
+            compare: [i, j],
+            sorted: sortedNow,
+            pointers: { i, j }
+          }));
           if (needSwap) {
             const t = items[i];
             items[i] = items[j];
             items[j] = t;
+            steps.push(snapArray({
+              title: 'Đổi ngay với a[i]',
+              note: `Hoán đổi a[${i}] và a[${j}]. Giá trị a[${i}] mới = ${items[i].val} được dùng cho các phép so tiếp theo.`,
+              slots: items,
+              vars: [`i = ${i}`, `j = ${j}`, `a[i] = ${items[i].val}`],
+              active: [i, j],
+              swap: [i, j],
+              sorted: sortedNow,
+              pointers: { i, j }
+            }));
           }
-          steps.push(snapArray({
-            title: needSwap ? 'Đổi ngay với a[i]' : 'Giữ nguyên',
-            note,
-            slots: items,
-            vars: [`i = ${i}`, `j = ${j}`],
-            active: [i, j],
-            compare: needSwap ? [] : [i, j],
-            swap: needSwap ? [i, j] : [],
-            sorted: sortedNow,
-            pointers: { i, j }
-          }));
         }
         steps.push(snapArray({
           title: `Xong lượt i = ${i}`,
-          note: 'a[i] đã đúng vị trí.',
+          note: `a[${i}] = ${items[i].val} đã đúng vị trí.`,
           slots: items,
           vars: [`i = ${i}`],
           active: [i],
@@ -246,6 +304,160 @@
     return steps;
   }
 
+  // 12th MODE: QUICK SORT (Slide IUH C2_2 tr. 68 — Hoare 2 pointers, middle pivot x = a[(left+right)/2])
+  function quickSort(input) {
+    const items = input.map((val, idx) => ({ uid: idx + 1, val }));
+    const n = items.length;
+    const sortedIndices = new Set();
+
+    const steps = [snapArray({
+      kind: 'quick',
+      title: 'Bắt đầu Quick Sort (Slide IUH)',
+      note: 'Chọn phần tử giữa x = a[(left+right)/2] làm mốc. Dùng i (từ trái) và j (từ phải) để phân hoạch thành 3 đoạn.',
+      slots: items,
+      vars: [`n = ${n}`],
+      range: [0, n - 1],
+      pivotVal: null
+    })];
+
+    function qs(left, right) {
+      if (left >= right) {
+        if (left === right) sortedIndices.add(left);
+        return;
+      }
+      const mid = Math.floor((left + right) / 2);
+      const x = items[mid].val;
+      let i = left;
+      let j = right;
+
+      steps.push(snapArray({
+        kind: 'quick',
+        title: `Phân hoạch [${left} .. ${right}], mốc x = ${x}`,
+        note: `mid = (${left} + ${right}) / 2 = ${mid} → x = a[${mid}] = ${x}. Đặt i = ${i}, j = ${j}.`,
+        slots: items,
+        vars: [`left = ${left}`, `right = ${right}`, `x = ${x}`, `i = ${i}`, `j = ${j}`],
+        range: [left, right],
+        pivotVal: x,
+        pivotIdx: mid,
+        compare: [mid],
+        sorted: Array.from(sortedIndices),
+        pointers: { i, j }
+      }));
+
+      do {
+        while (items[i].val < x) {
+          steps.push(snapArray({
+            kind: 'quick',
+            title: `Tăng i: a[${i}] < x`,
+            note: `${items[i].val} < ${x} đúng → i tiến sang phải (${i} → ${i + 1}).`,
+            slots: items,
+            vars: [`x = ${x}`, `i = ${i}`, `j = ${j}`],
+            range: [left, right],
+            pivotVal: x,
+            compare: [i],
+            sorted: Array.from(sortedIndices),
+            pointers: { i, j }
+          }));
+          i++;
+        }
+        while (items[j].val > x) {
+          steps.push(snapArray({
+            kind: 'quick',
+            title: `Giảm j: a[${j}] > x`,
+            note: `${items[j].val} > ${x} đúng → j lùi sang trái (${j} → ${j - 1}).`,
+            slots: items,
+            vars: [`x = ${x}`, `i = ${i}`, `j = ${j}`],
+            range: [left, right],
+            pivotVal: x,
+            compare: [j],
+            sorted: Array.from(sortedIndices),
+            pointers: { i, j }
+          }));
+          j--;
+        }
+        if (i <= j) {
+          if (i < j) {
+            steps.push(snapArray({
+              kind: 'quick',
+              title: `So sánh cặp dừng i = ${i}, j = ${j}`,
+              note: `a[${i}] = ${items[i].val} ≥ ${x} và a[${j}] = ${items[j].val} ≤ ${x} (i ≤ j) → chuẩn bị hoán đổi.`,
+              slots: items,
+              vars: [`x = ${x}`, `i = ${i}`, `j = ${j}`],
+              range: [left, right],
+              pivotVal: x,
+              compare: [i, j],
+              sorted: Array.from(sortedIndices),
+              pointers: { i, j }
+            }));
+            const tmp = items[i];
+            items[i] = items[j];
+            items[j] = tmp;
+            steps.push(snapArray({
+              kind: 'quick',
+              title: `Hoán đổi a[${i}] và a[${j}]`,
+              note: `Đổi chỗ ${items[j].val} và ${items[i].val}, sau đó i = ${i + 1}, j = ${j - 1}.`,
+              slots: items,
+              vars: [`x = ${x}`, `i = ${i}`, `j = ${j}`],
+              range: [left, right],
+              pivotVal: x,
+              swap: [i, j],
+              sorted: Array.from(sortedIndices),
+              pointers: { i, j }
+            }));
+          } else {
+            steps.push(snapArray({
+              kind: 'quick',
+              title: `i gặp j tại chỉ số ${i}`,
+              note: `i = j = ${i} (a[${i}] = ${items[i].val} = mốc ${x}): tăng i = ${i + 1}, giảm j = ${j - 1}.`,
+              slots: items,
+              vars: [`x = ${x}`, `i = ${i}`, `j = ${j}`],
+              range: [left, right],
+              pivotVal: x,
+              compare: [i],
+              sorted: Array.from(sortedIndices),
+              pointers: { i, j }
+            }));
+          }
+          i++;
+          j--;
+        }
+      } while (i < j);
+
+      for (let k = j + 1; k < i; k++) sortedIndices.add(k);
+
+      steps.push(snapArray({
+        kind: 'quick',
+        title: `Xong phân hoạch [${left} .. ${right}]`,
+        note: `Đoạn trái [${left}..${j}] ≤ ${x}; đoạn phải [${i}..${right}] ≥ ${x}. Đệ quy tiếp hai đoạn con.`,
+        slots: items,
+        vars: [`x = ${x}`, `j = ${j}`, `i = ${i}`],
+        range: [left, right],
+        pivotVal: x,
+        sorted: Array.from(sortedIndices),
+        pointers: {}
+      }));
+
+      if (left < j) qs(left, j);
+      else if (left === j) sortedIndices.add(left);
+
+      if (i < right) qs(i, right);
+      else if (i === right) sortedIndices.add(right);
+    }
+
+    qs(0, n - 1);
+    steps.push(snapArray({
+      kind: 'quick',
+      title: 'Hoàn thành Quick Sort',
+      note: 'Toàn bộ mảng đã sắp xếp tăng dần.',
+      slots: items,
+      vars: [`n = ${n}`],
+      range: [0, n - 1],
+      pivotVal: null,
+      sorted: Array.from({ length: n }, (_, k) => k)
+    }));
+    return steps;
+  }
+
   // 5. BINARY SEARCH
   function binary(input, target) {
     const items = input.map((val, idx) => ({ uid: idx + 1, val }));
@@ -258,12 +470,12 @@
       title: `Tìm khóa key = ${target}`,
       note: `Khởi tạo đoạn đóng [0 .. ${hi}] trên dãy tăng dần.`,
       slots: items,
-      vars: [`low = ${lo}`, `high = ${hi}`, `key = ${target}`],
+      vars: [`left = ${lo}`, `right = ${hi}`, `key = ${target}`],
       low: lo,
       high: hi,
       mid: null,
       found: null,
-      pointers: { low: lo, high: hi }
+      pointers: { left: lo, right: hi }
     }));
 
     while (lo <= hi) {
@@ -273,13 +485,13 @@
         title: 'Xét phần tử giữa',
         note: `So ${target} với a[${mid}] = ${items[mid].val}.`,
         slots: items,
-        vars: [`low = ${lo}`, `high = ${hi}`, `mid = ${mid}`, `key = ${target}`],
+        vars: [`left = ${lo}`, `right = ${hi}`, `mid = ${mid}`, `key = ${target}`],
         active: [mid],
         low: lo,
         high: hi,
         mid,
         found: null,
-        pointers: { low: lo, mid, high: hi }
+        pointers: { left: lo, mid, right: hi }
       }));
 
       if (items[mid].val === target) {
@@ -304,28 +516,28 @@
         steps.push(snapArray({
           kind: 'binary',
           title: `Thu hẹp sang phải [${lo} .. ${hi}]`,
-          note: `${items[mid].val} < ${target} → bỏ nửa trái, đặt low = mid + 1 = ${lo}.`,
+          note: `${items[mid].val} < ${target} → bỏ nửa trái, đặt left = mid + 1 = ${lo}.`,
           slots: items,
-          vars: [`low = ${lo}`, `high = ${hi}`, `key = ${target}`],
+          vars: [`left = ${lo}`, `right = ${hi}`, `key = ${target}`],
           low: lo,
           high: hi,
           mid: null,
           found: null,
-          pointers: lo <= hi ? { low: lo, high: hi } : {}
+          pointers: lo <= hi ? { left: lo, right: hi } : {}
         }));
       } else {
         hi = mid - 1;
         steps.push(snapArray({
           kind: 'binary',
           title: `Thu hẹp sang trái [${lo} .. ${hi}]`,
-          note: `${items[mid].val} > ${target} → bỏ nửa phải, đặt high = mid - 1 = ${hi}.`,
+          note: `${items[mid].val} > ${target} → bỏ nửa phải, đặt right = mid - 1 = ${hi}.`,
           slots: items,
-          vars: [`low = ${lo}`, `high = ${hi}`, `key = ${target}`],
+          vars: [`left = ${lo}`, `right = ${hi}`, `key = ${target}`],
           low: lo,
           high: hi,
           mid: null,
           found: null,
-          pointers: lo <= hi ? { low: lo, high: hi } : {}
+          pointers: lo <= hi ? { left: lo, right: hi } : {}
         }));
       }
     }
@@ -333,9 +545,9 @@
     steps.push(snapArray({
       kind: 'binary',
       title: 'Không tìm thấy',
-      note: 'Đoạn tìm kiếm rỗng: low > high. Trả về -1.',
+      note: 'Đoạn tìm kiếm rỗng: left > right. Trả về -1.',
       slots: items,
-      vars: [`low = ${lo}`, `high = ${hi}`, 'kết quả = -1'],
+      vars: [`left = ${lo}`, `right = ${hi}`, 'kết quả = -1'],
       low: lo,
       high: hi,
       mid: null,
@@ -476,13 +688,13 @@
     return steps;
   }
 
-  // 9. LINKED LIST PAIRWISE DATA SWAP
+  // 9. LINKED LIST PAIRWISE DATA SWAP (2-step: Select Pair -> Swap Values)
   function linkedPairs(input) {
     const items = input.map((val, idx) => ({ uid: idx + 1, val }));
     const steps = [snapArray({
       kind: 'linked',
       title: 'Danh sách ban đầu',
-      note: 'Đổi dữ liệu từng cặp nút, không đổi liên kết next.',
+      note: 'Đổi dữ liệu từng cặp nút, không đổi liên kết pNext.',
       slots: items,
       vars: items.length >= 2 ? ['p = nút 0', 'q = nút 1'] : ['Danh sách < 2 nút'],
       variables: 'p ở nút 0; q ở nút 1',
@@ -490,13 +702,26 @@
     })];
 
     for (let i = 0; i + 1 < items.length; i += 2) {
+      steps.push(snapArray({
+        kind: 'linked',
+        title: `Xét cặp nút (${i}, ${i + 1})`,
+        note: `Đưa p tới nút ${i} (data = ${items[i].val}) và q tới nút ${i + 1} (data = ${items[i + 1].val}).`,
+        slots: items,
+        vars: [`p = ${i}`, `q = ${i + 1}`],
+        variables: `p = ${i}; q = ${i + 1}`,
+        active: [i, i + 1],
+        compare: [i, i + 1],
+        pointers: { p: i, q: i + 1 }
+      }));
+
       const t = items[i];
       items[i] = items[i + 1];
       items[i + 1] = t;
+
       steps.push(snapArray({
         kind: 'linked',
         title: `Đổi cặp nút ${i}, ${i + 1}`,
-        note: 'Đổi dữ liệu hai nút (p, q) rồi tiến sang cặp tiếp theo. Nút cuối lẻ giữ nguyên.',
+        note: `Hoán đổi dữ liệu (${items[i + 1].val} ↔ ${items[i].val}); các con trỏ pNext giữ nguyên.`,
         slots: items,
         vars: [`p = ${i}`, `q = ${i + 1}`],
         variables: `p = ${i}; q = ${i + 1}`,
@@ -505,10 +730,25 @@
         pointers: { p: i, q: i + 1 }
       }));
     }
+
+    if (items.length % 2 === 1) {
+      const last = items.length - 1;
+      steps.push(snapArray({
+        kind: 'linked',
+        title: 'Giữ nguyên nút cuối lẻ',
+        note: `Nút ${last} (data = ${items[last].val}) không có cặp ghép nên giữ nguyên.`,
+        slots: items,
+        vars: [`p = ${last}`, 'q = NULL'],
+        variables: `p = ${last}; q = NULL`,
+        sorted: [last],
+        pointers: { p: last }
+      }));
+    }
+
     return steps;
   }
 
-  // 10 & 11. BST & AVL TREE + SEARCH-PATH TRAVERSAL + ROTATIONS + OPTIONAL DELETE
+  // 10 & 11. BST & AVL TREE + SEARCH-PATH TRAVERSAL + ROTATIONS + 2-CHILD DELETE CHOICE
   function cloneTree(t) {
     return t ? { v: t.v, l: cloneTree(t.l), r: cloneTree(t.r) } : null;
   }
@@ -519,6 +759,10 @@
 
   function bf(t) {
     return t ? height(t.l) - height(t.r) : 0;
+  }
+
+  function bfIuh(t) {
+    return t ? height(t.r) - height(t.l) : 0;
   }
 
   function walk(t, order = 'LNR') {
@@ -571,7 +815,7 @@
         log.push(`LR: xoay trái tại ${t.l.v}.`);
         t.l = rotLeft(t.l);
       }
-      log.push(`Xoay phải tại ${t.v} (BF=${b}).`);
+      log.push(`Xoay phải tại ${t.v}.`);
       return rotRight(t);
     }
     if (b < -1) {
@@ -579,7 +823,7 @@
         log.push(`RL: xoay phải tại ${t.r.v}.`);
         t.r = rotRight(t.r);
       }
-      log.push(`Xoay trái tại ${t.v} (BF=${b}).`);
+      log.push(`Xoay trái tại ${t.v}.`);
       return rotLeft(t);
     }
     return t;
@@ -599,13 +843,13 @@
     return avl ? balance(t, log) : t;
   }
 
-  function deleteNode(t, v, avl = false, log = []) {
+  function deleteNode(t, v, avl = false, log = [], replaceSide = 'right') {
     if (!t) {
       log.push(`Không có khóa ${v} trong cây.`);
       return null;
     }
-    if (v < t.v) t.l = deleteNode(t.l, v, avl, log);
-    else if (v > t.v) t.r = deleteNode(t.r, v, avl, log);
+    if (v < t.v) t.l = deleteNode(t.l, v, avl, log, replaceSide);
+    else if (v > t.v) t.r = deleteNode(t.r, v, avl, log, replaceSide);
     else {
       if (!t.l) {
         log.push(`Xóa ${v}; nối lên cây con phải (có thể rỗng).`);
@@ -615,11 +859,19 @@
         log.push(`Xóa ${v}; nối lên cây con trái.`);
         return t.l;
       }
-      let n = t.r;
-      while (n.l) n = n.l;
-      log.push(`Thế mạng phải: nhỏ nhất cây phải = ${n.v}.`);
-      t.v = n.v;
-      t.r = deleteNode(t.r, n.v, avl, log);
+      if (replaceSide === 'left') {
+        let n = t.l;
+        while (n.r) n = n.r;
+        log.push(`Thế mạng trái: lớn nhất cây trái = ${n.v}.`);
+        t.v = n.v;
+        t.l = deleteNode(t.l, n.v, avl, log, replaceSide);
+      } else {
+        let n = t.r;
+        while (n.l) n = n.l;
+        log.push(`Thế mạng phải: nhỏ nhất cây phải = ${n.v}.`);
+        t.v = n.v;
+        t.r = deleteNode(t.r, n.v, avl, log, replaceSide);
+      }
     }
     return avl ? balance(t, log) : t;
   }
@@ -647,13 +899,20 @@
       tree: cloneTree(t),
       highlight: extra.highlight ? extra.highlight.slice() : [],
       visited: extra.visited ? extra.visited.slice() : [],
-      probe: extra.probe ? { ...extra.probe } : null
+      probe: extra.probe ? { ...extra.probe } : null,
+      deleteChoice: extra.deleteChoice ? { ...extra.deleteChoice } : null,
+      replacedAnim: extra.replacedAnim ? { ...extra.replacedAnim } : null
     };
   }
 
-  function treeTrace(input, avl = false, remove = null) {
+  function treeTrace(input, avl = false, remove = null, opts = {}) {
+    const replaceSide = opts.replaceSide === 'left' ? 'left' : 'right';
     let root = null;
-    const steps = [treeStep('Cây rỗng', 'Chèn từng khóa từ trái sang phải, so sánh từ gốc đi xuống.' + (avl ? ' Tự động xoay cân bằng khi |BF| > 1.' : ''), root)];
+    const steps = [treeStep(
+      'Cây rỗng',
+      'Chèn từng khóa từ trái sang phải, so sánh từ gốc đi xuống.' + (avl ? ' Tự cân bằng khi |CSCB| > 1.' : ''),
+      root
+    )];
 
     function rebalanceTrace(node, assignInParent) {
       if (!node) return null;
@@ -720,7 +979,7 @@
         root = insertNode(root, v, false, []);
         steps.push(treeStep(
           `Chèn ${v}`,
-          `Gắn ${v} làm con ${lastDir} của ${lastParent} theo quy tắc BST.${avl ? ' Kiểm tra BF từ dưới lên.' : ''}`,
+          `Gắn ${v} làm con ${lastDir} của ${lastParent} theo quy tắc BST.${avl ? ' Kiểm tra cân bằng từ dưới lên.' : ''}`,
           root,
           { highlight: [v], visited: visitedPath }
         ));
@@ -731,22 +990,19 @@
     if (remove !== null && remove !== undefined) {
       let cur = root;
       const searchPath = [];
+      let foundNode = null;
+
       while (cur) {
         searchPath.push(cur.v);
         if (cur.v === remove) {
-          steps.push(treeStep(
-            `Định vị nút xóa ${remove}`,
-            `Đã tìm thấy nút ${remove} trên cây. Tiến hành xóa theo quy tắc BST.`,
-            root,
-            { highlight: [remove], visited: searchPath }
-          ));
+          foundNode = cur;
           break;
         }
         const goLeft = remove < cur.v;
         const dir = goLeft ? 'left' : 'right';
         const cmpSymbol = goLeft ? '<' : '>';
         steps.push(treeStep(
-          `Dò khóa xóa ${remove}: so sánh với ${cur.v}`,
+          `Dò khóa xóa ${remove}: so với ${cur.v}`,
           `${remove} ${cmpSymbol} ${cur.v} → đi sang nhánh ${goLeft ? 'trái' : 'phải'}.`,
           root,
           {
@@ -758,9 +1014,72 @@
         cur = goLeft ? cur.l : cur.r;
       }
 
-      const log = [];
-      root = deleteNode(root, remove, false, log);
-      steps.push(treeStep(`Xóa ${remove}`, log.join('\n'), root, {}));
+      if (foundNode && foundNode.l && foundNode.r) {
+        let leftP = foundNode.l;
+        while (leftP.r) leftP = leftP.r;
+        let rightS = foundNode.r;
+        while (rightS.l) rightS = rightS.l;
+
+        steps.push(treeStep(
+          `Định vị nút xóa ${remove} (có 2 con)`,
+          `Nút ${remove} có đủ 2 cây con → có thể chọn thế mạng: Phải nhất cây trái (${leftP.v}) hoặc Trái nhất cây phải (${rightS.v}).`,
+          root,
+          {
+            highlight: [remove],
+            visited: searchPath,
+            deleteChoice: { targetVal: remove, leftVal: leftP.v, rightVal: rightS.v, selected: replaceSide }
+          }
+        ));
+
+        const candPath = [remove];
+        let walker = replaceSide === 'left' ? foundNode.l : foundNode.r;
+        const dirWord = replaceSide === 'left' ? 'phải' : 'trái';
+        while (walker) {
+          candPath.push(walker.v);
+          const nextW = replaceSide === 'left' ? walker.r : walker.l;
+          if (!nextW) break;
+          steps.push(treeStep(
+            `Tìm thế mạng ${replaceSide === 'left' ? 'trái' : 'phải'}: xét ${walker.v}`,
+            `Đi hết sang ${dirWord} từ ${walker.v} tới ${nextW.v}.`,
+            root,
+            { highlight: [walker.v], visited: candPath }
+          ));
+          walker = nextW;
+        }
+
+        const chosenVal = replaceSide === 'left' ? leftP.v : rightS.v;
+        steps.push(treeStep(
+          `Chọn nút thế mạng: ${chosenVal}`,
+          replaceSide === 'left'
+            ? `${chosenVal} là phải nhất (lớn nhất) cây con trái → chuẩn bị đưa lên thay cho ${remove}.`
+            : `${chosenVal} là trái nhất (nhỏ nhất) cây con phải → chuẩn bị đưa lên thay cho ${remove}.`,
+          root,
+          { highlight: [chosenVal, remove], visited: candPath }
+        ));
+
+        const log = [];
+        root = deleteNode(root, remove, false, log, replaceSide);
+        steps.push(treeStep(
+          `Thay thế ${remove} bằng ${chosenVal}`,
+          log.join('\n') + `\nĐưa ${chosenVal} lên thế chỗ ${remove} và nối lại nhánh con (nếu có).`,
+          root,
+          { highlight: [chosenVal], replacedAnim: { fromVal: chosenVal, oldTargetVal: remove } }
+        ));
+      } else {
+        if (foundNode) {
+          const childKind = (!foundNode.l && !foundNode.r) ? 'nút lá (0 con)' : 'nút có 1 con';
+          steps.push(treeStep(
+            `Định vị nút xóa ${remove} (${childKind})`,
+            `Nút ${remove} chỉ có tối đa 1 con nên xóa trực tiếp, không cần chọn thế mạng.`,
+            root,
+            { highlight: [remove], visited: searchPath }
+          ));
+        }
+        const log = [];
+        root = deleteNode(root, remove, false, log, replaceSide);
+        steps.push(treeStep(`Xóa ${remove}`, log.join('\n'), root, {}));
+      }
+
       if (avl) root = rebalanceTrace(root, (x) => { root = x; });
     }
 
@@ -773,6 +1092,7 @@
     formatSeq,
     snapArray,
     sort,
+    quickSort,
     binary,
     operations,
     postfix,
@@ -780,6 +1100,7 @@
     cloneTree,
     height,
     bf,
+    bfIuh,
     walk,
     leaves,
     rotRight,
