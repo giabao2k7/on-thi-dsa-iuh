@@ -52,6 +52,24 @@ function run() {
       assert(new Set(q.options).size === 4, `Unique choices type ${type} seed ${seed}`);
       assert(q.options.filter((x) => x === q.correct).length === 1, `One exact answer type ${type} seed ${seed}`);
       assert(typeof q.explanation === 'string' && q.explanation.trim().length > 0, `Explanation type ${type}`);
+      assert(!q.explanation.includes('Mẹo của dạng'), `No tip block in explanation type ${type}`);
+      assert(q.category === 'sim' || q.category === 'theory', `Valid category type ${type}`);
+      if (q.category === 'sim') {
+        assert(Array.isArray(q.trace) && q.trace.length > 0, `Sim question has non-empty trace type ${type}`);
+        assert(typeof q.simMode === 'string' && q.simMode.length > 0, `Sim question has simMode type ${type}`);
+        assert(q.simStartIndex >= 0 && q.simStartIndex < q.trace.length, `Valid simStartIndex type ${type}`);
+      } else {
+        assert(Array.isArray(q.trace) && q.trace.length === 0, `Theory question has empty trace type ${type}`);
+        assert(
+          q.compareRef && Array.isArray(q.compareRef.headers) && Array.isArray(q.compareRef.rows) && q.compareRef.rows.length >= 2,
+          `Theory question has compareRef table type ${type}`
+        );
+      }
+      assert(typeof Questions.diagnoseWrong(q, null) === 'string' && Questions.diagnoseWrong(q, null).trim().length > 0, `Diagnose unanswered type ${type}`);
+      q.options.filter((x) => x !== q.correct).forEach((wrongOpt) => {
+        const diag = Questions.diagnoseWrong(q, wrongOpt);
+        assert(typeof diag === 'string' && diag.trim().length > 0, `Diagnose wrong option type ${type}`);
+      });
 
       const treeSteps = q.trace.filter((x) => x.kind === 'tree');
       if (treeSteps.length > 0 && type !== 21) {
@@ -194,6 +212,41 @@ function run() {
 
   const delLeaf = Algo.treeTrace([30, 20, 40, 10, 25, 35, 50], false, 10);
   assert(delLeaf.every((s) => s.deleteChoice === null), 'Leaf deletion hides 2-child replacement choice');
+
+  // New inline trace builders
+  const recPost = Algo.recursionListTrace([10, 20, 30], false);
+  assert(recPost[recPost.length - 1].variables.includes('[30, 20, 10]'), 'recursionListTrace post-only');
+  const recBoth = Algo.recursionListTrace([10, 20, 30], true);
+  assert(recBoth[recBoth.length - 1].variables.includes('[10, 20, 30, 30, 20, 10]'), 'recursionListTrace pre+post');
+
+  const cyc1 = Algo.stackQueueCyclesTrace([1, 2, 3, 4], 1);
+  seqEqual(cyc1[cyc1.length - 1].values, [4, 3, 2, 1], 'stackQueueCyclesTrace 1 cycle');
+  const cyc2 = Algo.stackQueueCyclesTrace([1, 2, 3, 4], 2);
+  seqEqual(cyc2[cyc2.length - 1].values, [1, 2, 3, 4], 'stackQueueCyclesTrace 2 cycles');
+
+  const brOk = Algo.bracketsTrace('([{}])');
+  assert(brOk[brOk.length - 1].title.includes('Hợp lệ'), 'bracketsTrace valid');
+  const brMismatch = Algo.bracketsTrace('([)]');
+  assert(brMismatch[brMismatch.length - 1].title.includes('không khớp'), 'bracketsTrace mismatch');
+  const brOpen = Algo.bracketsTrace('(()');
+  assert(brOpen[brOpen.length - 1].title.includes('chưa đóng'), 'bracketsTrace unclosed');
+  const brEmpty = Algo.bracketsTrace('())(');
+  assert(brEmpty[brEmpty.length - 1].title.includes('Stack rỗng'), 'bracketsTrace empty stack');
+
+  const inf1 = Algo.infixToPostfixTrace('a*(b+c)');
+  assert(inf1[inf1.length - 1].variables.includes('a b c + *'), 'infixToPostfixTrace a*(b+c)');
+  const inf2 = Algo.infixToPostfixTrace('(a-b)/c');
+  assert(inf2[inf2.length - 1].variables.includes('a b - c /'), 'infixToPostfixTrace (a-b)/c');
+
+  const decBin = Algo.decimalToBinaryTrace(13);
+  assert(decBin[decBin.length - 1].vars.some((v) => v.includes('1101')), 'decimalToBinaryTrace 13 -> 1101');
+  assert(decBin[decBin.length - 1].vars.some((v) => v.includes('1, 0, 1, 1')), 'decimalToBinaryTrace 13 push order');
+
+  const sampleBst = Algo.build([30, 20, 40, 10, 25], false);
+  const travSteps = Algo.treeTraversalSteps(sampleBst, 'NLR');
+  assert(travSteps.length === 5 && travSteps[0].highlight[0] === 30, 'treeTraversalSteps NLR');
+  const searchSteps = Algo.treeSearchSteps(sampleBst, 25);
+  assert(searchSteps.length === 3 && searchSteps[2].highlight[0] === 25, 'treeSearchSteps path length 3');
 
   console.log('PASS');
   console.log(`${assertions} assertions`);

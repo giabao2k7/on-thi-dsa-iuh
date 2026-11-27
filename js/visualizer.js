@@ -129,6 +129,17 @@
       if (this.wrap) this._resizeObserver.observe(this.wrap);
     }
 
+    destroy() {
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      this.animState = null;
+      if (this._resizeObserver) {
+        this._resizeObserver.disconnect();
+      }
+    }
+
     resize() {
       if (!this.wrap) return;
       const rect = this.wrap.getBoundingClientRect();
@@ -331,13 +342,15 @@
       ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
-      const headerLabel = this.mode === 'insertion'
-        ? (isNarrow ? 'BIẾN TẠM x & MẢNG' : 'VÙNG GIỮ TẠM (x)  &  MẢNG CHÍNH (chỉ số từ 0)')
-        : (toStep.kind === 'binary'
-          ? (isNarrow ? 'TÌM NHỊ PHÂN [left .. right]' : 'TÌM KIẾM NHỊ PHÂN • VÙNG [left .. right] THU HẸP MƯỢT')
-          : (toStep.kind === 'quick'
-            ? (isNarrow ? 'QUICK SORT (IUH)' : 'QUICK SORT (SLIDE IUH) • CHỌN MỐC GIỮA x = a[(left+right)/2] & PHÂN HOẠCH')
-            : (isNarrow ? 'MẢNG (chỉ số 0)' : 'MẢNG • CHỈ SỐ TỪ 0')));
+      const headerLabel = toStep.headerTitle
+        ? toStep.headerTitle
+        : (this.mode === 'insertion'
+          ? (isNarrow ? 'BIẾN TẠM x & MẢNG' : 'VÙNG GIỮ TẠM (x)  &  MẢNG CHÍNH (chỉ số từ 0)')
+          : (toStep.kind === 'binary'
+            ? (isNarrow ? 'TÌM NHỊ PHÂN [left .. right]' : 'TÌM KIẾM NHỊ PHÂN • VÙNG [left .. right] THU HẸP MƯỢT')
+            : (toStep.kind === 'quick'
+              ? (isNarrow ? 'QUICK SORT (IUH)' : 'QUICK SORT (SLIDE IUH) • CHỌN MỐC GIỮA x = a[(left+right)/2] & PHÂN HOẠCH')
+              : (isNarrow ? 'MẢNG (chỉ số 0)' : 'MẢNG • CHỈ SỐ TỪ 0'))));
       ctx.fillText(headerLabel, isNarrow ? 14 : 24, isNarrow ? 24 : 28);
       if (toStep.kind === 'quick' && toStep.pivotVal !== null && toStep.pivotVal !== undefined) {
         drawPill(ctx, `Mốc x = ${toStep.pivotVal}`, isNarrow ? W - 56 : W - 80, isNarrow ? 22 : 26, pal.compareBg, pal.compareBorder, pal.compareText, isNarrow ? 11 : 12);
@@ -663,24 +676,27 @@
     _computeStackLayout(step, W, H) {
       const stepItems = step.items || [];
       const isNarrow = W < 520;
-      const maxVisible = Math.max(6, stepItems.length + 1);
+      const isCompactH = H < 290;
+      const maxVisible = Math.max(5, stepItems.length + 1);
       const boxW = isNarrow
         ? Math.min(116, Math.max(80, Math.round(W * 0.27)))
         : Math.min(164, Math.max(118, Math.round(W * 0.19)));
-      const itemH = Math.min(isNarrow ? 34 : 44, Math.floor((H - (isNarrow ? 105 : 120)) / maxVisible));
-      const gap = isNarrow ? 5 : 7;
+      const gap = isCompactH ? 4 : (isNarrow ? 5 : 7);
+      const bottomY = H - (isCompactH ? 28 : (isNarrow ? 36 : 52));
+      const bucketTop = isCompactH ? 56 : 76;
+      const availH = Math.max(90, bottomY - bucketTop - (maxVisible - 1) * gap);
+      const itemH = Math.min(isNarrow ? 34 : 44, Math.max(18, Math.floor(availH / maxVisible)));
       const cx = isNarrow
         ? Math.max(Math.round(boxW / 2) + 12, Math.round(W * 0.18))
         : Math.max(Math.round(boxW / 2) + 34, Math.round(W * 0.22));
       const bucketRight = cx + boxW / 2;
-      const tapeW = isNarrow ? Math.min(116, Math.max(92, Math.round(W * 0.30))) : (W < 580 ? 132 : 152);
+      const tapeW = isNarrow ? Math.min(120, Math.max(94, Math.round(W * 0.31))) : (W < 580 ? 136 : 158);
       const popZoneLeft = bucketRight + (isNarrow ? 44 : 78);
       const tapeX = isNarrow ? (W - tapeW - 10) : Math.max(popZoneLeft + 104, W - tapeW - 24);
       const popZoneRight = tapeX - (isNarrow ? 8 : 20);
       const popW = Math.min(boxW - (isNarrow ? 14 : 20), Math.max(isNarrow ? 52 : 76, popZoneRight - popZoneLeft));
       const popX = Math.round((popZoneLeft + popZoneRight - popW) / 2);
-      const bottomY = H - (isNarrow ? 36 : 52);
-      const topEntranceY = 46;
+      const topEntranceY = isCompactH ? 38 : 46;
 
       const innerPad = isNarrow ? 14 : 22;
       const items = {};
@@ -703,12 +719,12 @@
           uid: step.popped.uid,
           val: step.popped.val,
           x: popX,
-          y: 112,
+          y: isCompactH ? 96 : 112,
           w: popW,
           h: itemH
         };
       }
-      return { cx, boxW, innerPad, bucketRight, tapeX, tapeW, popX, popW, bottomY, itemH, topEntranceY, items, poppedPose };
+      return { cx, boxW, innerPad, bucketRight, bucketTop, tapeX, tapeW, popX, popW, bottomY, itemH, topEntranceY, isCompactH, items, poppedPose };
     }
 
     _drawStack(fromStep, toStep, rawT, W, H, pal) {
@@ -722,28 +738,47 @@
       ctx.font = isNarrow ? '700 11px "Segoe UI", sans-serif' : '700 12px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'left';
-      ctx.fillText(isNarrow ? 'STACK (LIFO)' : 'STACK (LIFO) · VÀO TRÊN / RA TRÊN (BOTTOM → TOP)', isNarrow ? 14 : 24, isNarrow ? 24 : 28);
-      ctx.fillText(isNarrow ? 'THAO TÁC' : 'CHUỖI THAO TÁC', toL.tapeX, 58);
-      (toStep.tokens || []).forEach((tok, idx) => {
-        const ty = 78 + idx * (isNarrow ? 30 : 34);
-        if (ty > H - 28) return;
+      const stackHeader = toStep.headerTitle || (isNarrow ? 'STACK (LIFO)' : 'STACK (LIFO) · VÀO TRÊN / RA TRÊN (BOTTOM → TOP)');
+      const tapeTitle = toStep.tapeTitle || (isNarrow ? 'THAO TÁC' : 'CHUỖI THAO TÁC');
+      ctx.fillText(stackHeader, isNarrow ? 14 : 24, isNarrow ? 22 : 26);
+      ctx.fillText(tapeTitle, toL.tapeX, toL.isCompactH ? 46 : 58);
+
+      const tokens = toStep.tokens || [];
+      const rowStep = toL.isCompactH ? 27 : (isNarrow ? 30 : 34);
+      const rowH = toL.isCompactH ? 23 : (isNarrow ? 25 : 28);
+      const tapeStartY = toL.isCompactH ? 62 : 78;
+      const maxRows = Math.max(3, Math.floor((H - tapeStartY - 14) / rowStep));
+      let startTok = 0;
+      if (tokens.length > maxRows) {
+        const focus = Math.max(0, Math.min(tokens.length - 1, toStep.tokenIndex || 0));
+        startTok = Math.max(0, Math.min(tokens.length - maxRows, focus - Math.floor(maxRows / 2)));
+      }
+      const endTok = Math.min(tokens.length, startTok + maxRows);
+
+      for (let idx = startTok; idx < endTok; idx++) {
+        const tok = tokens[idx];
+        const ty = tapeStartY + (idx - startTok) * rowStep;
         const isCur = idx === toStep.tokenIndex;
         const isPast = idx < toStep.tokenIndex;
-        const label = tok === -1 ? (isNarrow ? 'pop()' : 'pop()  [-1]') : `push(${tok})`;
-        roundRectPath(ctx, toL.tapeX, ty, toL.tapeW, isNarrow ? 25 : 28, 8);
+        const label = (toStep.tokenLabels && toStep.tokenLabels[idx])
+          ? toStep.tokenLabels[idx]
+          : (tok === -1 ? (isNarrow ? 'pop()' : 'pop()  [-1]') : `push(${tok})`);
+        roundRectPath(ctx, toL.tapeX, ty, toL.tapeW, rowH, 8);
         ctx.fillStyle = isCur ? pal.accentBg : pal.tileBg;
         ctx.fill();
         ctx.strokeStyle = isCur ? pal.accent : pal.tileBorder;
         ctx.lineWidth = isCur ? 1.8 : 1;
         ctx.stroke();
         ctx.fillStyle = isCur ? pal.accent : (isPast ? pal.muted : pal.tileText);
-        ctx.font = isNarrow ? '600 11px "Cascadia Code", monospace' : '600 12px "Cascadia Code", monospace';
+        ctx.font = isNarrow || toL.isCompactH
+          ? '600 10.5px "Cascadia Code", monospace'
+          : '600 11.5px "Cascadia Code", monospace';
         ctx.textBaseline = 'middle';
-        ctx.fillText(label, toL.tapeX + (isNarrow ? 8 : 12), ty + (isNarrow ? 12.5 : 14));
-      });
+        ctx.fillText(label, toL.tapeX + (isNarrow ? 7 : 10), ty + rowH / 2);
+      }
       ctx.restore();
 
-      const bucketTop = 76;
+      const bucketTop = toL.bucketTop;
       const bucketLeft = toL.cx - toL.boxW / 2;
       const bucketRight = toL.bucketRight;
       const bucketBottom = toL.bottomY + 8;
@@ -759,10 +794,10 @@
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.stroke();
-      ctx.font = '700 12px "Segoe UI", sans-serif';
+      ctx.font = '700 11.5px "Segoe UI", sans-serif';
       ctx.fillStyle = pal.muted;
       ctx.textAlign = 'center';
-      ctx.fillText('BOTTOM', toL.cx, bucketBottom + 20);
+      ctx.fillText(toStep.bottomLabel || 'BOTTOM', toL.cx, bucketBottom + 16);
       ctx.restore();
 
       if (toL.poppedPose || fromL.poppedPose) {
@@ -814,6 +849,11 @@
           isHighlight = !hasPop;
         }
 
+        const valStr = String(val);
+        const stackFontSz = valStr.length > 6
+          ? (isNarrow ? 10.5 : 11.5)
+          : (valStr.length > 3 ? (isNarrow ? 12 : 13) : (toL.itemH < 24 ? 13 : 16));
+
         ctx.save();
         ctx.globalAlpha = alpha;
         roundRectPath(ctx, x, y, w, toL.itemH, 10);
@@ -823,15 +863,17 @@
         ctx.lineWidth = isPopAnim || isHighlight || isTop ? 2 : 1.5;
         ctx.stroke();
         ctx.fillStyle = isPopAnim ? pal.swapText : (isHighlight ? pal.accent : (isTop ? pal.compareText : pal.tileText));
-        ctx.font = '700 16px "Segoe UI", sans-serif';
+        ctx.font = `700 ${stackFontSz}px "Segoe UI", sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(String(val), x + w / 2, y + toL.itemH / 2 + 1);
+        ctx.fillText(valStr, x + w / 2, y + toL.itemH / 2 + 1);
         ctx.restore();
       });
 
       if (fromL.poppedPose && !toL.items[fromL.poppedPose.uid] && (!toL.poppedPose || toL.poppedPose.uid !== fromL.poppedPose.uid)) {
         const p = fromL.poppedPose;
+        const pStr = String(p.val);
+        const pSz = pStr.length > 5 ? 11.5 : 15;
         ctx.save();
         ctx.globalAlpha = 1 - t;
         roundRectPath(ctx, p.x, p.y - t * 20, p.w, p.h, 10);
@@ -841,10 +883,10 @@
         ctx.lineWidth = 1.6;
         ctx.stroke();
         ctx.fillStyle = pal.swapText;
-        ctx.font = '700 15px "Segoe UI", sans-serif';
+        ctx.font = `700 ${pSz}px "Segoe UI", sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(String(p.val), p.x + p.w / 2, p.y - t * 20 + p.h / 2 + 1);
+        ctx.fillText(pStr, p.x + p.w / 2, p.y - t * 20 + p.h / 2 + 1);
         ctx.restore();
       }
       if (toL.poppedPose) {
@@ -854,13 +896,13 @@
         ctx.font = '700 12px "Segoe UI", sans-serif';
         ctx.fillStyle = pal.swapText;
         ctx.textAlign = 'center';
-        ctx.fillText('Đã lấy ra (Pop)', p.x + p.w / 2, p.y - 16);
+        ctx.fillText(toStep.popLabel || 'Đã lấy ra (Pop)', p.x + p.w / 2, p.y - 14);
         ctx.restore();
       }
 
       const fromTopY = fromStep.items.length > 0 ? fromL.items[fromStep.items[fromStep.items.length - 1].uid].y + toL.itemH / 2 : bucketBottom - 16;
       const toTopY = toStep.items.length > 0 ? toL.items[toStep.items[toStep.items.length - 1].uid].y + toL.itemH / 2 : bucketBottom - 16;
-      drawPill(ctx, isNarrow ? 'TOP' : '← TOP', bucketRight + (isNarrow ? 22 : 38), lerp(fromTopY, toTopY, t), pal.accentBg, pal.accent, pal.accent, isNarrow ? 10 : 12);
+      drawPill(ctx, toStep.topPill || (isNarrow ? 'TOP' : '← TOP'), bucketRight + (isNarrow ? 22 : 38), lerp(fromTopY, toTopY, t), pal.accentBg, pal.accent, pal.accent, isNarrow ? 10 : 11.5);
     }
 
     // ---------------------------------------------------------

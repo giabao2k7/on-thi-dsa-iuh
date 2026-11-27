@@ -889,6 +889,7 @@
     const vars = [`Cao = ${h} mức`, `Số nút = ${count}`, `Lá = ${leafCount}`];
     if (extra.probe) vars.push(`Đang xét = ${extra.probe.v}`);
     if (extra.badge) vars.push(`Xoay: ${extra.badge}`);
+    if (extra.extraVar) vars.push(extra.extraVar);
     return {
       kind: 'tree',
       title,
@@ -1087,6 +1088,474 @@
     return steps;
   }
 
+  // 13. RECURSION ON LINKED LIST (CALL STACK TRACE)
+  function recursionListTrace(arr, printBefore) {
+    const tokens = [];
+    const tokenLabels = [];
+    arr.forEach((v) => {
+      tokens.push(v);
+      tokenLabels.push(`f(${v})`);
+    });
+    tokens.push(-1);
+    tokenLabels.push('p == NULL');
+    for (let i = arr.length - 1; i >= 0; i--) {
+      tokens.push(-1);
+      tokenLabels.push(`Trả về f(${arr[i]})`);
+    }
+
+    const st = [];
+    const printed = [];
+    let uidCounter = 1;
+    let tokIdx = -1;
+
+    const makeStep = (title, note, extra = {}) => ({
+      kind: 'stack',
+      headerTitle: 'CALL STACK ĐỆ QUY TRÊN DSLK',
+      tapeTitle: 'LỜI GỌI HÀM',
+      bottomLabel: 'ĐÁY STACK',
+      topPill: 'ĐỈNH',
+      popLabel: extra.popLabel || 'Thoát khung',
+      title,
+      note,
+      vars: extra.vars || [`Đã in: ${printed.length ? formatArr(printed) : '[]'}`],
+      variables: `Đã in: ${formatArr(printed)}`,
+      values: st.map((x) => x.val),
+      items: cloneSlots(st),
+      popped: extra.popped ? { ...extra.popped } : null,
+      tokenIndex: tokIdx,
+      tokens: tokens.slice(),
+      tokenLabels: tokenLabels.slice()
+    });
+
+    const steps = [makeStep(
+      'Bắt đầu gọi f(pHead)',
+      printBefore
+        ? `Danh sách ${formatArr(arr)}. Hàm in TRƯỚC khi gọi đệ quy và in SAU khi đệ quy trả về.`
+        : `Danh sách ${formatArr(arr)}. Lệnh in nằm SAU lời gọi đệ quy f(p->next).`
+    )];
+
+    arr.forEach((v) => {
+      tokIdx++;
+      st.push({ uid: uidCounter++, val: `f(${v})` });
+      if (printBefore) printed.push(v);
+      steps.push(makeStep(
+        `Gọi f(${v})`,
+        printBefore
+          ? `p != NULL: in ${v} ngay lúc đi xuống, rồi đẩy f(${v}) vào Call Stack để gọi f(p->next).`
+          : `p != NULL: chưa in ${v}; đẩy khung f(${v}) vào Call Stack rồi gọi f(p->next).`,
+        { vars: [`p->data = ${v}`, `Đã in: ${printed.length ? formatArr(printed) : '[]'}`] }
+      ));
+    });
+
+    tokIdx++;
+    steps.push(makeStep(
+      'Chạm p == NULL → return',
+      'Điều kiện dừng kích hoạt, bắt đầu quay ngược (unwind) từng khung từ đỉnh Call Stack.',
+      { vars: ['p = NULL', `Đã in: ${printed.length ? formatArr(printed) : '[]'}`] }
+    ));
+
+    for (let i = arr.length - 1; i >= 0; i--) {
+      tokIdx++;
+      const popped = st.pop();
+      printed.push(arr[i]);
+      steps.push(makeStep(
+        `Quay về f(${arr[i]}) → in ${arr[i]}`,
+        `Lời gọi f(p->next) đã trả về nên chạy lệnh sau đệ quy: in ${arr[i]}.`,
+        { popped, vars: [`In ra = ${arr[i]}`, `Đã in: ${formatArr(printed)}`] }
+      ));
+    }
+
+    steps.push(makeStep(
+      'Hoàn thành',
+      `Thứ tự in ra cuối cùng: ${formatArr(printed)}.`,
+      { vars: [`Kết quả = ${formatArr(printed)}`] }
+    ));
+    return steps;
+  }
+
+  // 14. STACK <-> QUEUE REVERSAL CYCLES
+  function stackQueueCyclesTrace(arr, times) {
+    let cur = arr.map((val, idx) => ({ uid: idx + 1, val }));
+    const n = cur.length;
+    const steps = [snapArray({
+      title: 'Trạng thái ban đầu của Stack S',
+      note: `S từ top → bottom là ${formatArr(arr)}, Queue Q ban đầu rỗng. Mỗi chu trình đảo ngược S đúng 1 lần.`,
+      slots: cur,
+      vars: [`S (top→bottom) = ${formatArr(arr)}`, 'Q = []'],
+      pointers: n > 1 ? { top: 0, bottom: n - 1 } : (n === 1 ? { top: 0 } : {})
+    })];
+    steps[0].headerTitle = 'STACK S (TRÁI = TOP → PHẢI = BOTTOM)';
+
+    for (let c = 1; c <= times; c++) {
+      const qArr = cur.map((x) => x.val);
+      const stepQ = snapArray({
+        title: `Chu trình ${c} (1/2): Pop hết S → Enqueue vào Q`,
+        note: `Pop từ top của S nên Q nhận theo thứ tự front → rear: ${formatArr(qArr)}.`,
+        slots: cur,
+        compare: cur.map((_, idx) => idx),
+        vars: ['S = []', `Q (front→rear) = ${formatArr(qArr)}`],
+        pointers: n > 1 ? { front: 0, rear: n - 1 } : (n === 1 ? { front: 0 } : {})
+      });
+      stepQ.headerTitle = 'HÀNG ĐỢI Q (TRÁI = FRONT → PHẢI = REAR)';
+      steps.push(stepQ);
+
+      cur = cur.slice().reverse();
+      const sArr = cur.map((x) => x.val);
+      const stepS = snapArray({
+        title: `Chu trình ${c} (2/2): Dequeue hết Q → Push lại S`,
+        note: `Dequeue từ front đưa vào S theo LIFO: phần tử lấy ra sau cùng nằm trên top → S bị đảo thành ${formatArr(sArr)}.`,
+        slots: cur,
+        sorted: cur.map((_, idx) => idx),
+        vars: [`Xong chu trình ${c}`, `S (top→bottom) = ${formatArr(sArr)}`],
+        pointers: n > 1 ? { top: 0, bottom: n - 1 } : (n === 1 ? { top: 0 } : {})
+      });
+      stepS.headerTitle = 'STACK S (TRÁI = TOP → PHẢI = BOTTOM)';
+      steps.push(stepS);
+    }
+    return steps;
+  }
+
+  // 15. BALANCED BRACKETS CHECK WITH STACK
+  function bracketsTrace(str) {
+    const chars = String(str || '').split('');
+    const tokens = chars.map((_, idx) => idx);
+    const tokenLabels = chars.map((ch, idx) => `[${idx}]: '${ch}'`);
+    const openToClose = { '(': ')', '[': ']', '{': '}' };
+    const closeToOpen = { ')': '(', ']': '[', '}': '{' };
+
+    const st = [];
+    let uidCounter = 1;
+    let failed = false;
+
+    const makeStep = (tokIdx, title, note, extra = {}) => ({
+      kind: 'stack',
+      headerTitle: 'KIỂM TRA NGOẶC BẰNG STACK',
+      tapeTitle: 'CHUỖI NGOẶC',
+      popLabel: extra.popLabel || 'Khớp & Pop',
+      title,
+      note,
+      vars: extra.vars || [`Chuỗi: ${str}`, `size = ${st.length}`],
+      variables: `Stack: [${st.map((x) => x.val).join(', ')}]`,
+      values: st.map((x) => x.val),
+      items: cloneSlots(st),
+      popped: extra.popped ? { ...extra.popped } : null,
+      tokenIndex: tokIdx,
+      tokens: tokens.slice(),
+      tokenLabels: tokenLabels.slice()
+    });
+
+    const steps = [makeStep(
+      -1,
+      'Bắt đầu kiểm tra',
+      `Chuỗi ${str}. Gặp ngoặc mở thì Push vào Stack; gặp ngoặc đóng thì phải khớp với ngoặc mở ở đỉnh Stack.`
+    )];
+
+    for (let i = 0; i < chars.length; i++) {
+      const ch = chars[i];
+      if (openToClose[ch]) {
+        st.push({ uid: uidCounter++, val: ch });
+        steps.push(makeStep(
+          i,
+          `Đọc '${ch}' → Push vào Stack`,
+          `Gặp ngoặc mở '${ch}', đẩy lên đỉnh Stack (size = ${st.length}).`,
+          { vars: [`Ký tự = '${ch}'`, `size = ${st.length}`] }
+        ));
+      } else if (closeToOpen[ch]) {
+        if (st.length === 0) {
+          failed = true;
+          steps.push(makeStep(
+            i,
+            `Lỗi: Gặp '${ch}' khi Stack rỗng`,
+            `Đọc ngoặc đóng '${ch}' nhưng Stack đang rỗng, không có ngoặc mở tương ứng → Kết luận: Gặp ngoặc đóng khi stack rỗng.`,
+            { vars: [`Ký tự = '${ch}'`, 'LỖI: Stack rỗng'] }
+          ));
+          break;
+        }
+        const top = st[st.length - 1];
+        if (top.val !== closeToOpen[ch]) {
+          failed = true;
+          steps.push(makeStep(
+            i,
+            `Lỗi: '${ch}' không khớp đỉnh '${top.val}'`,
+            `Đỉnh Stack đang là '${top.val}' (cần '${openToClose[top.val]}'), nhưng lại gặp '${ch}' → Kết luận: Sai loại ngoặc khi đóng.`,
+            { vars: [`Đỉnh = '${top.val}'`, `Gặp = '${ch}' (LỖI)`] }
+          ));
+          break;
+        }
+        const popped = st.pop();
+        steps.push(makeStep(
+          i,
+          `Đọc '${ch}' → Khớp '${popped.val}'`,
+          `Đỉnh Stack là '${popped.val}' khớp với '${ch}' → Pop khỏi Stack.`,
+          { popped, vars: [`Khớp ${popped.val}${ch}`, `size = ${st.length}`] }
+        ));
+      }
+    }
+
+    if (!failed) {
+      if (st.length === 0) {
+        steps.push(makeStep(
+          chars.length,
+          'Kết luận: Hợp lệ',
+          'Đã duyệt hết chuỗi, mọi cặp ngoặc đều khớp và Stack rỗng.',
+          { vars: ['size = 0', 'Kết quả = Hợp lệ'] }
+        ));
+      } else {
+        steps.push(makeStep(
+          chars.length,
+          'Lỗi: Còn ngoặc mở chưa đóng',
+          `Đã hết chuỗi nhưng Stack vẫn còn [${st.map((x) => x.val).join(', ')}] chưa có ngoặc đóng → Kết luận: Kết thúc còn ngoặc mở chưa đóng.`,
+          { vars: [`Còn dư: ${st.map((x) => x.val).join(' ')}`, 'Kết quả = Chưa đóng hết'] }
+        ));
+      }
+    }
+    return steps;
+  }
+
+  // 16. INFIX TO POSTFIX CONVERSION (OPERATOR STACK TRACE)
+  function infixToPostfixTrace(exp) {
+    const tokens = String(exp || '').replace(/\s+/g, '').split('').filter(Boolean);
+    const tokenLabels = tokens.map((t) => `Token: ${t}`);
+    const prec = { '+': 1, '-': 1, '*': 2, '/': 2 };
+    const st = [];
+    const out = [];
+    let uidCounter = 1;
+
+    const makeStep = (tokIdx, title, note, extra = {}) => ({
+      kind: 'stack',
+      headerTitle: 'STACK TOÁN TỬ (TRUNG TỐ → HẬU TỐ)',
+      tapeTitle: 'BIỂU THỨC',
+      popLabel: 'Ra hậu tố',
+      title,
+      note,
+      vars: [`Hậu tố: ${out.length ? out.join(' ') : '(rỗng)'}`].concat(extra.vars || []),
+      variables: `Hậu tố: ${out.join(' ')}`,
+      values: st.map((x) => x.val),
+      items: cloneSlots(st),
+      popped: extra.popped ? { ...extra.popped } : null,
+      tokenIndex: tokIdx,
+      tokens: tokens.slice(),
+      tokenLabels: tokenLabels.slice()
+    });
+
+    const steps = [makeStep(
+      -1,
+      'Bắt đầu chuyển Trung tố → Hậu tố',
+      `Biểu thức ${exp}. Toán hạng xuất ngay ra hậu tố; ngoặc và toán tử xử lý qua Stack theo độ ưu tiên (* / cao hơn + -).`
+    )];
+
+    tokens.forEach((tok, idx) => {
+      if (/^[a-zA-Z0-9]$/.test(tok)) {
+        out.push(tok);
+        steps.push(makeStep(
+          idx,
+          `Đọc toán hạng '${tok}'`,
+          `Gặp toán hạng '${tok}' → đưa thẳng ra chuỗi hậu tố.`,
+          { vars: [`Token = ${tok}`] }
+        ));
+      } else if (tok === '(') {
+        st.push({ uid: uidCounter++, val: '(' });
+        steps.push(makeStep(
+          idx,
+          "Đọc '(' → Push vào Stack",
+          "Gặp ngoặc mở '(' → đẩy vào Stack để đánh dấu phạm vi ưu tiên trong ngoặc.",
+          { vars: ['Token = ('] }
+        ));
+      } else if (tok === ')') {
+        const poppedOps = [];
+        let lastPopped = null;
+        while (st.length && st[st.length - 1].val !== '(') {
+          const p = st.pop();
+          out.push(p.val);
+          poppedOps.push(p.val);
+          lastPopped = p;
+        }
+        if (st.length && st[st.length - 1].val === '(') st.pop();
+        steps.push(makeStep(
+          idx,
+          "Đọc ')' → Pop toán tử trong ngoặc",
+          `Pop toán tử (${poppedOps.length ? poppedOps.join(' ') : 'rỗng'}) ra hậu tố cho tới khi gặp '(' và loại bỏ '('.`,
+          { popped: lastPopped, vars: ['Token = )'] }
+        ));
+      } else {
+        const poppedOps = [];
+        let lastPopped = null;
+        while (st.length && st[st.length - 1].val !== '(' && (prec[st[st.length - 1].val] || 0) >= (prec[tok] || 0)) {
+          const p = st.pop();
+          out.push(p.val);
+          poppedOps.push(p.val);
+          lastPopped = p;
+        }
+        st.push({ uid: uidCounter++, val: tok });
+        steps.push(makeStep(
+          idx,
+          `Đọc toán tử '${tok}'`,
+          poppedOps.length
+            ? `Pop toán tử ưu tiên ≥ '${tok}' (${poppedOps.join(' ')}) ra hậu tố trước, rồi Push '${tok}' vào Stack.`
+            : `Đỉnh Stack rỗng, là '(' hoặc ưu tiên thấp hơn → Push '${tok}' vào Stack.`,
+          { popped: lastPopped, vars: [`Token = ${tok}`] }
+        ));
+      }
+    });
+
+    if (st.length > 0) {
+      const rem = [];
+      let lastPopped = null;
+      while (st.length) {
+        const p = st.pop();
+        out.push(p.val);
+        rem.push(p.val);
+        lastPopped = p;
+      }
+      steps.push(makeStep(
+        tokens.length,
+        'Hết chuỗi → Pop hết Stack',
+        `Đưa các toán tử còn lại (${rem.join(' ')}) ra cuối → Kết quả: ${out.join(' ')}.`,
+        { popped: lastPopped, vars: [`Kết quả = ${out.join(' ')}`] }
+      ));
+    } else {
+      steps.push(makeStep(
+        tokens.length,
+        'Hoàn thành',
+        `Kết quả hậu tố: ${out.join(' ')}.`,
+        { vars: [`Kết quả = ${out.join(' ')}`] }
+      ));
+    }
+    return steps;
+  }
+
+  // 17. DECIMAL TO BINARY CONVERSION VIA STACK
+  function decimalToBinaryTrace(num) {
+    const actions = [];
+    let tmp = num;
+    const rems = [];
+    while (tmp > 0) {
+      const q = Math.floor(tmp / 2);
+      const rem = tmp % 2;
+      rems.push(rem);
+      actions.push({ kind: 'push', n: tmp, q, rem, label: `${tmp}÷2=${q} d ${rem}` });
+      tmp = q;
+    }
+    for (let i = rems.length - 1; i >= 0; i--) {
+      actions.push({ kind: 'pop', rem: rems[i], label: `Pop() → ${rems[i]}` });
+    }
+
+    const tokens = actions.map((_, i) => i);
+    const tokenLabels = actions.map((a) => a.label);
+    const st = [];
+    const outBits = [];
+    let uidCounter = 1;
+
+    const makeStep = (tokIdx, title, note, extra = {}) => ({
+      kind: 'stack',
+      headerTitle: `ĐỔI ${num}₁₀ → NHỊ PHÂN BẰNG STACK`,
+      tapeTitle: 'CHIA 2 / POP',
+      popLabel: 'Bit in ra',
+      title,
+      note,
+      vars: extra.vars || [`n = ${num}`],
+      variables: `Push: ${rems.join(', ')}`,
+      values: st.map((x) => x.val),
+      items: cloneSlots(st),
+      popped: extra.popped ? { ...extra.popped } : null,
+      tokenIndex: tokIdx,
+      tokens: tokens.slice(),
+      tokenLabels: tokenLabels.slice()
+    });
+
+    const steps = [makeStep(
+      -1,
+      `Bắt đầu đổi n = ${num}`,
+      'Giai đoạn 1: Chia 2 liên tiếp, đẩy phần dư vào Stack. Giai đoạn 2: Pop hết Stack theo LIFO để ghép số nhị phân.',
+      { vars: [`n = ${num}`, 'Stack = []'] }
+    )];
+
+    actions.forEach((act, idx) => {
+      if (act.kind === 'push') {
+        st.push({ uid: uidCounter++, val: act.rem });
+        steps.push(makeStep(
+          idx,
+          `Chia ${act.n} ÷ 2 = ${act.q} dư ${act.rem} → Push(${act.rem})`,
+          `Đẩy bit dư ${act.rem} vào Stack. Thứ tự Push từ dưới lên đỉnh là [${st.map((x) => x.val).join(', ')}].`,
+          { vars: [`n còn lại = ${act.q}`, `Đã Push: ${st.map((x) => x.val).join(', ')}`] }
+        ));
+      } else {
+        const popped = st.pop();
+        outBits.push(popped.val);
+        steps.push(makeStep(
+          idx,
+          `Pop() → ${popped.val}`,
+          `Lấy bit đỉnh Stack = ${popped.val} theo LIFO → chuỗi nhị phân hiện tại: ${outBits.join('')}.`,
+          { popped, vars: [`Nhị phân: ${outBits.join('')}`, `Còn trong Stack = ${st.length}`] }
+        ));
+      }
+    });
+
+    steps.push(makeStep(
+      actions.length,
+      'Hoàn thành',
+      `Thứ tự bit được Push vào: ${rems.join(', ')}. Khi Pop hết ra thu được: ${outBits.join('')}₂.`,
+      { vars: [`Push: ${rems.join(', ')}`, `Kết quả: ${outBits.join('')}₂`] }
+    ));
+    return steps;
+  }
+
+  // 18. TREE TRAVERSAL & TREE SEARCH STEP TRACES
+  function treeTraversalSteps(tree, order) {
+    const seq = walk(tree, order);
+    const orderLabel = order === 'Level' ? 'theo mức (BFS)' : order;
+    return seq.map((val, idx) => {
+      const visited = seq.slice(0, idx + 1);
+      return treeStep(
+        `Duyệt ${orderLabel}: thăm ${val}`,
+        `Thăm nút ${val} (${idx + 1}/${seq.length}) → dãy hiện tại: ${formatArr(visited)}.`,
+        tree,
+        {
+          highlight: [val],
+          visited,
+          extraVar: `${order}: ${formatArr(visited)}`
+        }
+      );
+    });
+  }
+
+  function treeSearchSteps(tree, key) {
+    const steps = [];
+    const visited = [];
+    let cur = tree;
+    while (cur) {
+      visited.push(cur.v);
+      if (cur.v === key) {
+        steps.push(treeStep(
+          `Tìm thấy ${key} (qua ${visited.length} nút)`,
+          `Đường tìm kiếm: ${visited.join(' → ')}. Tổng cộng đi qua ${visited.length} nút (${visited.length - 1} cạnh).`,
+          tree,
+          {
+            highlight: [cur.v],
+            visited: visited.slice(),
+            extraVar: `Số nút đã qua = ${visited.length}`
+          }
+        ));
+        break;
+      }
+      const goLeft = key < cur.v;
+      const sym = goLeft ? '<' : '>';
+      steps.push(treeStep(
+        `So sánh ${key} với ${cur.v}`,
+        `${key} ${sym} ${cur.v} → đi tiếp sang nhánh ${goLeft ? 'trái' : 'phải'}.`,
+        tree,
+        {
+          highlight: [cur.v],
+          visited: visited.slice(),
+          probe: { v: key, atVal: cur.v, dir: goLeft ? 'left' : 'right', label: `${key} ${sym} ${cur.v} → ${goLeft ? 'Trái' : 'Phải'}` },
+          extraVar: `Đã qua: ${visited.join(' → ')}`
+        }
+      ));
+      cur = goLeft ? cur.l : cur.r;
+    }
+    return steps;
+  }
+
   const Algo = {
     formatArr,
     formatSeq,
@@ -1110,7 +1579,14 @@
     deleteNode,
     build,
     treeStep,
-    treeTrace
+    treeTrace,
+    recursionListTrace,
+    stackQueueCyclesTrace,
+    bracketsTrace,
+    infixToPostfixTrace,
+    decimalToBinaryTrace,
+    treeTraversalSteps,
+    treeSearchSteps
   };
 
   root.DSA_ALGO = Algo;

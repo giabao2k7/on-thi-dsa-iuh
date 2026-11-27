@@ -1547,10 +1547,11 @@ input[type="range"].sim-slider::-webkit-slider-thumb {
   font-size: 13.5px;
   font-weight: 500;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 11px;
+  gap: 8px 11px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .option-card:hover:not(:disabled) {
@@ -1567,9 +1568,20 @@ input[type="range"].sim-slider::-webkit-slider-thumb {
   background-color: var(--emerald-soft);
 }
 
-.option-card.wrong {
+.option-card.wrong,
+.option-card.missed {
   border-color: var(--rose-text);
   background-color: var(--rose-soft);
+}
+
+.option-card.dimmed {
+  opacity: 0.58;
+}
+
+.option-text {
+  flex: 1 1 150px;
+  min-width: 0;
+  line-height: 1.45;
 }
 
 .option-letter {
@@ -1584,6 +1596,215 @@ input[type="range"].sim-slider::-webkit-slider-thumb {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   flex-shrink: 0;
+}
+
+.option-card.selected .option-letter {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.option-card.correct .option-letter {
+  background-color: var(--emerald-text);
+  border-color: var(--emerald-text);
+  color: #ffffff;
+}
+
+.option-card.wrong .option-letter,
+.option-card.missed .option-letter {
+  background-color: var(--rose-text);
+  border-color: var(--rose-text);
+  color: #ffffff;
+}
+
+.option-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tag-correct {
+  background-color: var(--emerald-soft);
+  color: var(--emerald-text);
+  border: 1px solid var(--emerald-text);
+}
+
+.tag-wrong,
+.tag-missed {
+  background-color: var(--rose-soft);
+  color: var(--rose-text);
+  border: 1px solid var(--rose-text);
+}
+
+.tag-selected {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.result-banner {
+  padding: 10px 14px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.45;
+}
+
+.result-ok {
+  background-color: var(--emerald-soft);
+  color: var(--emerald-text);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.result-wrong,
+.result-missed {
+  background-color: var(--rose-soft);
+  color: var(--rose-text);
+  border: 1px solid rgba(244, 63, 94, 0.40);
+}
+
+.explain-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wrong-diagnosis-box {
+  padding: 12px 14px;
+  border-radius: 11px;
+  background-color: var(--rose-soft);
+  border: 1px solid rgba(244, 63, 94, 0.36);
+}
+
+.wrong-diag-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--rose-text);
+  margin-bottom: 4px;
+}
+
+.wrong-diag-text {
+  font-size: 13px;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.inline-sim-card {
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background-color: var(--bg-surface-2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.inline-sim-head {
+  padding: 9px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.inline-sim-vars {
+  padding: 6px 12px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.inline-sim-vars:empty {
+  display: none;
+}
+
+.inline-sim-canvas-wrap {
+  height: 250px;
+  position: relative;
+  background-color: var(--bg-canvas);
+}
+
+.inline-sim-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.inline-sim-foot {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+}
+
+.inline-sim-controls {
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.inline-sim-controls .sim-slider {
+  flex: 1;
+  min-width: 140px;
+}
+
+.inline-sim-btns {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.compare-ref-card,
+.explanation-text-box {
+  padding: 13px 14px;
+  border-radius: 12px;
+  background-color: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+}
+
+.compare-row-active td {
+  background-color: var(--accent-soft);
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.compare-row-active td:first-child {
+  color: var(--accent);
+}
+
+.exam-palette-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.exam-palette-summary .sum-ok {
+  color: var(--emerald-text);
+}
+
+.exam-palette-summary .sum-bad {
+  color: var(--rose-text);
+}
+
+.exam-palette-summary .sum-skip {
+  color: var(--rose-text);
+  opacity: 0.85;
 }
 
 .practice-actions-bar {
@@ -1636,6 +1857,10 @@ input[type="range"].sim-slider::-webkit-slider-thumb {
   background-color: var(--rose-soft);
   color: var(--rose-text);
   border-color: var(--rose-text);
+}
+
+.exam-num-btn.bad.skipped {
+  border-style: dashed;
 }
 
 .exam-sheet-head {
@@ -1985,6 +2210,19 @@ input[type="range"].sim-slider::-webkit-slider-thumb {
 
   .practice-actions-bar .btn {
     flex: 1;
+  }
+
+  .inline-sim-canvas-wrap {
+    height: 215px;
+  }
+
+  .inline-sim-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inline-sim-btns {
+    justify-content: center;
   }
 
   /* EXAM MOBILE PALETTE SHEET & STICKY FOOTER */

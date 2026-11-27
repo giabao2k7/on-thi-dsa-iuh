@@ -54,6 +54,7 @@
       id: q.id,
       type: q.type,
       seed: q.seed,
+      category: q.category || null,
       prompt: q.prompt,
       correct: q.correct,
       options: Array.isArray(q.options) ? q.options.slice() : [],

@@ -36,6 +36,15 @@
   let modalViz = null;
   let miniViz = null;
   let miniPlayTimer = null;
+  const inlineVizSlots = { practice: null, exam: null };
+
+  function destroyInlineViz(slotKey) {
+    const slot = inlineVizSlots[slotKey];
+    if (!slot) return;
+    if (slot.stop) slot.stop();
+    if (slot.viz && typeof slot.viz.destroy === 'function') slot.viz.destroy();
+    inlineVizSlots[slotKey] = null;
+  }
 
   function esc(str) {
     return String(str == null ? '' : str)
@@ -86,6 +95,8 @@
     if (simViz) simViz.renderCurrent();
     if (modalViz) modalViz.renderCurrent();
     if (miniViz) miniViz.renderCurrent();
+    if (inlineVizSlots.practice && inlineVizSlots.practice.viz) inlineVizSlots.practice.viz.renderCurrent();
+    if (inlineVizSlots.exam && inlineVizSlots.exam.viz) inlineVizSlots.exam.viz.renderCurrent();
   }
 
   function applySidebarPinned(pinned, save = true) {
@@ -100,6 +111,14 @@
     setTimeout(() => {
       if (currentTab === 'sim' && simViz) { simViz.resize(); simViz.renderCurrent(); }
       if (currentTab === 'lessons' && miniViz) { miniViz.resize(); miniViz.renderCurrent(); }
+      if (currentTab === 'practice' && inlineVizSlots.practice && inlineVizSlots.practice.viz) {
+        inlineVizSlots.practice.viz.resize();
+        inlineVizSlots.practice.viz.renderCurrent();
+      }
+      if (currentTab === 'exam' && inlineVizSlots.exam && inlineVizSlots.exam.viz) {
+        inlineVizSlots.exam.viz.resize();
+        inlineVizSlots.exam.viz.renderCurrent();
+      }
     }, 220);
   }
 
@@ -135,6 +154,8 @@
       }
     }
     if (typeof openSimPanel === 'function') openSimPanel(null);
+    if (tabId !== 'practice' && inlineVizSlots.practice && inlineVizSlots.practice.stop) inlineVizSlots.practice.stop();
+    if (tabId !== 'exam' && inlineVizSlots.exam && inlineVizSlots.exam.stop) inlineVizSlots.exam.stop();
     currentTab = tabId;
     navButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tabId));
     mobileNavButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tabId));
@@ -151,6 +172,20 @@
       requestAnimationFrame(() => {
         simViz.resize();
         simViz.renderCurrent();
+      });
+    } else if (tabId === 'practice') {
+      requestAnimationFrame(() => {
+        if (inlineVizSlots.practice && inlineVizSlots.practice.viz) {
+          inlineVizSlots.practice.viz.resize();
+          inlineVizSlots.practice.viz.renderCurrent();
+        }
+      });
+    } else if (tabId === 'exam') {
+      requestAnimationFrame(() => {
+        if (inlineVizSlots.exam && inlineVizSlots.exam.viz) {
+          inlineVizSlots.exam.viz.resize();
+          inlineVizSlots.exam.viz.renderCurrent();
+        }
       });
     }
   }
@@ -1510,6 +1545,215 @@
   });
 
   // =========================================================
+  // SHARED QUESTION EXPLANATION, MISCONCEPTION & INLINE SIM
+  // =========================================================
+  function renderCompareRefHtml(ref) {
+    if (!ref || !Array.isArray(ref.headers) || !Array.isArray(ref.rows)) return '';
+    return `
+      <div class="compare-ref-card">
+        <div class="section-tag" style="margin-bottom:8px;">${esc(ref.title)}</div>
+        <div class="table-scroll-wrap">
+          <table class="data-table">
+            <thead><tr>${ref.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+            <tbody>
+              ${ref.rows.map((row, rIdx) => `
+                <tr class="${rIdx === ref.highlightRow ? 'compare-row-active' : ''}">
+                  ${row.map((c) => `<td>${esc(c)}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderQuestionExplanationHtml(q, chosen, prefix) {
+    const isCorrect = chosen === q.correct;
+    const isUnanswered = chosen === null || chosen === undefined || chosen === '';
+    const hasSim = q.category === 'sim' && Array.isArray(q.trace) && q.trace.length > 0;
+    const diagTitle = isUnanswered
+      ? 'Bạn chưa chọn đáp án'
+      : (q.category === 'sim' ? 'Bạn hình dung sai ở đâu?' : 'Bạn đang nhớ nhầm ở đâu?');
+
+    return `
+      <div class="explain-stack">
+        ${!isCorrect ? `
+          <div class="wrong-diagnosis-box ${isUnanswered ? 'is-missed' : ''}">
+            <div class="wrong-diag-title">${esc(diagTitle)}</div>
+            <div class="wrong-diag-text">${esc(Questions.diagnoseWrong(q, chosen))}</div>
+          </div>
+        ` : ''}
+
+        ${hasSim ? `
+          <div class="inline-sim-card">
+            <div class="inline-sim-head">
+              <div class="sim-stage-title-wrap">
+                <span id="${prefix}-sim-badge" class="font-mono-code step-badge">Bước 1 / ${q.trace.length}</span>
+                <strong id="${prefix}-sim-title" class="step-title"></strong>
+              </div>
+              ${q.simPreset ? `<button id="${prefix}-sim-openfull" type="button" class="btn btn-ghost" style="color:var(--accent);padding:4px 9px;">Mở mô phỏng 60fps ↗</button>` : ''}
+            </div>
+            <div id="${prefix}-sim-vars" class="step-vars inline-sim-vars"></div>
+            <div id="${prefix}-sim-wrap" class="inline-sim-canvas-wrap">
+              <canvas id="${prefix}-sim-canvas"></canvas>
+            </div>
+            <div class="inline-sim-foot">
+              <div class="sim-note-wrap">
+                <span class="note-dot"></span>
+                <span id="${prefix}-sim-note" class="step-note"></span>
+              </div>
+            </div>
+            <div class="inline-sim-controls">
+              <input id="${prefix}-sim-slider" type="range" min="0" max="${Math.max(0, q.trace.length - 1)}" value="0" class="sim-slider" />
+              <div class="inline-sim-btns">
+                <button id="${prefix}-sim-first" type="button" class="btn btn-ghost" title="Bước đầu">|◀</button>
+                <button id="${prefix}-sim-prev" type="button" class="btn">◀ Lùi</button>
+                <button id="${prefix}-sim-play" type="button" class="btn btn-primary">▶ Tự chạy</button>
+                <button id="${prefix}-sim-next" type="button" class="btn">Tiếp ▶</button>
+                <button id="${prefix}-sim-last" type="button" class="btn btn-ghost" title="Bước cuối">▶|</button>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${q.category === 'theory' && q.compareRef ? renderCompareRefHtml(q.compareRef) : ''}
+
+        <div class="explanation-text-box">
+          <div class="section-tag" style="margin-bottom:4px;">Giải thích chi tiết</div>
+          <div style="font-size:13px;color:var(--text-soft);white-space:pre-wrap;line-height:1.65;">${esc(q.explanation)}</div>
+        </div>
+
+        ${q.category === 'sim' && q.compareRef ? renderCompareRefHtml(q.compareRef) : ''}
+      </div>
+    `;
+  }
+
+  function mountInlineQuestionViz(q, prefix, slotKey) {
+    destroyInlineViz(slotKey);
+    if (!q || q.category !== 'sim' || !Array.isArray(q.trace) || !q.trace.length) return;
+    const wrap = document.getElementById(`${prefix}-sim-wrap`);
+    const canvas = document.getElementById(`${prefix}-sim-canvas`);
+    if (!wrap || !canvas) return;
+
+    const viz = new Visualizer(canvas, wrap, () => appEl.getAttribute('data-theme'));
+    viz.avlBfMode = store.getPref('avlBfMode');
+    const steps = q.trace;
+    const mode = q.simMode || 'array';
+    viz.setData(mode, steps);
+
+    let idx = Math.max(0, Math.min(q.simStartIndex || 0, steps.length - 1));
+    let playing = false;
+    let timer = null;
+
+    const badgeEl = document.getElementById(`${prefix}-sim-badge`);
+    const titleEl = document.getElementById(`${prefix}-sim-title`);
+    const varsEl = document.getElementById(`${prefix}-sim-vars`);
+    const noteEl = document.getElementById(`${prefix}-sim-note`);
+    const sliderEl = document.getElementById(`${prefix}-sim-slider`);
+    const firstBtn = document.getElementById(`${prefix}-sim-first`);
+    const prevBtn = document.getElementById(`${prefix}-sim-prev`);
+    const playBtn = document.getElementById(`${prefix}-sim-play`);
+    const nextBtn = document.getElementById(`${prefix}-sim-next`);
+    const lastBtn = document.getElementById(`${prefix}-sim-last`);
+    const openFullBtn = document.getElementById(`${prefix}-sim-openfull`);
+
+    const syncReadout = () => {
+      const st = steps[idx];
+      if (!st) return;
+      if (badgeEl) badgeEl.textContent = `Bước ${idx + 1} / ${steps.length}`;
+      if (titleEl) titleEl.textContent = st.title || '';
+      if (noteEl) noteEl.textContent = st.note || '';
+      if (sliderEl) sliderEl.value = idx;
+      if (varsEl) {
+        varsEl.innerHTML = (st.vars || []).map((v) =>
+          `<span class="font-mono-code" style="font-size:11.5px;padding:2px 8px;border-radius:7px;background:var(--bg-surface-2);border:1px solid var(--border-subtle);color:var(--text-soft);">${esc(v)}</span>`
+        ).join('');
+      }
+      if (firstBtn) firstBtn.disabled = idx <= 0;
+      if (prevBtn) prevBtn.disabled = idx <= 0;
+      if (nextBtn) nextBtn.disabled = idx >= steps.length - 1;
+      if (lastBtn) lastBtn.disabled = idx >= steps.length - 1;
+    };
+
+    const stop = () => {
+      playing = false;
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      if (playBtn) {
+        playBtn.textContent = '▶ Tự chạy';
+        playBtn.className = 'btn btn-primary';
+      }
+    };
+
+    const goTo = (nextIdx, instant = false) => {
+      const clamped = Math.max(0, Math.min(nextIdx, steps.length - 1));
+      if (clamped === idx && !instant) return;
+      const prev = idx;
+      idx = clamped;
+      syncReadout();
+      viz.transitionTo(prev, idx, instant);
+    };
+
+    const tick = () => {
+      if (!playing) return;
+      if (idx >= steps.length - 1) {
+        stop();
+        return;
+      }
+      goTo(idx + 1);
+      const delay = (mode === 'avl' || mode === 'bst') ? 1250 : 1050;
+      timer = setTimeout(tick, delay);
+    };
+
+    if (firstBtn) firstBtn.addEventListener('click', () => { stop(); goTo(0); });
+    if (prevBtn) prevBtn.addEventListener('click', () => { stop(); goTo(idx - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { stop(); goTo(idx + 1); });
+    if (lastBtn) lastBtn.addEventListener('click', () => { stop(); goTo(steps.length - 1); });
+    if (sliderEl) {
+      sliderEl.addEventListener('input', (e) => {
+        stop();
+        goTo(parseInt(e.target.value, 10), true);
+      });
+    }
+    if (playBtn) {
+      playBtn.addEventListener('click', () => {
+        if (playing) {
+          stop();
+          return;
+        }
+        if (idx >= steps.length - 1) goTo(0, true);
+        playing = true;
+        playBtn.textContent = '⏸ Tạm dừng';
+        playBtn.className = 'btn btn-amber';
+        if (idx < steps.length - 1) goTo(idx + 1);
+        const delay = (mode === 'avl' || mode === 'bst') ? 1250 : 1050;
+        timer = setTimeout(tick, delay);
+      });
+    }
+    if (openFullBtn && q.simPreset) {
+      openFullBtn.addEventListener('click', () => {
+        stop();
+        if (q.simPreset.bubbleDir) store.setPref('bubbleDir', q.simPreset.bubbleDir);
+        if (q.simPreset.replaceSide) store.setPref('treeReplaceSide', q.simPreset.replaceSide);
+        switchTab('sim');
+        selectSimMode(q.simPreset.mode, q.simPreset.arr, q.simPreset.key);
+      });
+    }
+
+    inlineVizSlots[slotKey] = { viz, stop };
+    syncReadout();
+    requestAnimationFrame(() => {
+      if (inlineVizSlots[slotKey] && inlineVizSlots[slotKey].viz === viz) {
+        viz.resize();
+        viz.transitionTo(idx, idx, true);
+      }
+    });
+  }
+
+  // =========================================================
   // 4. PRACTICE TAB
   // =========================================================
   let practiceFilter = 0;
@@ -1538,6 +1782,7 @@
   }
 
   function renderPractice() {
+    destroyInlineViz('practice');
     const el = document.getElementById('tab-practice');
     if (!practiceQ) practiceQ = makeQuestionForFilter(practiceFilter);
     const lesson = Lessons[practiceQ.type - 1];
@@ -1570,16 +1815,29 @@
           <div id="pq-options" class="options-grid">
             ${practiceQ.options.map((opt, idx) => {
               let cls = 'option-card';
+              let tagHtml = '';
               if (practiceChecked) {
-                if (opt === practiceQ.correct) cls += ' correct';
-                else if (opt === practiceSelected) cls += ' wrong';
+                if (opt === practiceQ.correct && opt === practiceSelected) {
+                  cls += ' correct';
+                  tagHtml = '<span class="option-tag tag-correct">✓ Bạn chọn · Đúng</span>';
+                } else if (opt === practiceQ.correct) {
+                  cls += ' correct';
+                  tagHtml = '<span class="option-tag tag-correct">✓ Đáp án đúng</span>';
+                } else if (opt === practiceSelected) {
+                  cls += ' wrong';
+                  tagHtml = '<span class="option-tag tag-wrong">✕ Bạn chọn</span>';
+                } else {
+                  cls += ' dimmed';
+                }
               } else if (opt === practiceSelected) {
                 cls += ' selected';
+                tagHtml = '<span class="option-tag tag-selected">Đang chọn</span>';
               }
               return `
                 <button type="button" class="${cls}" data-opt="${idx}" ${practiceChecked ? 'disabled' : ''}>
                   <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
-                  <span style="white-space:pre-wrap;">${esc(opt)}</span>
+                  <span class="option-text" style="white-space:pre-wrap;">${esc(opt)}</span>
+                  ${tagHtml}
                 </button>
               `;
             }).join('')}
@@ -1587,9 +1845,12 @@
         </div>
 
         <div class="practice-actions-bar">
-          <button id="pq-hint-btn" type="button" class="btn btn-lg" ${practiceChecked || practiceHints >= maxHints ? 'disabled' : ''}>Gợi ý (${practiceHints}/${maxHints})</button>
-          <button id="pq-check-btn" type="button" class="btn btn-primary btn-lg" ${practiceChecked ? 'disabled' : ''}>Kiểm tra đáp án</button>
-          <button id="pq-sim-btn" type="button" class="btn btn-lg" style="color:var(--accent);border-color:var(--accent-border);" ${!practiceChecked || (!practiceQ.simPreset && (!practiceQ.trace || !practiceQ.trace.length)) ? 'disabled' : ''}>Xem từng bước ▶</button>
+          ${practiceChecked ? `
+            <button id="pq-next-btn" type="button" class="btn btn-primary btn-lg">Câu tiếp theo →</button>
+          ` : `
+            <button id="pq-hint-btn" type="button" class="btn btn-lg" ${practiceHints >= maxHints ? 'disabled' : ''}>Gợi ý (${practiceHints}/${maxHints})</button>
+            <button id="pq-check-btn" type="button" class="btn btn-primary btn-lg">Kiểm tra đáp án</button>
+          `}
         </div>
 
         <div id="pq-feedback" class="surface-card practice-feedback" style="padding:18px 20px;display:${practiceChecked || practiceHints > 0 ? 'block' : 'none'};">
@@ -1612,48 +1873,57 @@
       });
     });
 
-    document.getElementById('pq-hint-btn').addEventListener('click', () => {
-      if (practiceChecked || !lesson || practiceHints >= lesson.reasoning.length) return;
-      practiceHints++;
-      renderPractice();
-    });
+    const hintBtn = document.getElementById('pq-hint-btn');
+    if (hintBtn) {
+      hintBtn.addEventListener('click', () => {
+        if (practiceChecked || !lesson || practiceHints >= lesson.reasoning.length) return;
+        practiceHints++;
+        renderPractice();
+      });
+    }
 
-    document.getElementById('pq-check-btn').addEventListener('click', () => {
-      if (practiceChecked) return;
-      if (practiceSelected === null) {
-        const fb = document.getElementById('pq-feedback');
-        fb.style.display = 'block';
-        fb.innerHTML = '<div style="color:var(--amber-text);font-weight:600;">Hãy chọn một đáp án A, B, C hoặc D trước khi kiểm tra.</div>';
-        return;
-      }
-      practiceChecked = true;
-      store.recordAttempt(practiceQ, practiceSelected);
-      updateMistakeBadge();
-      renderPractice();
-    });
+    const checkBtn = document.getElementById('pq-check-btn');
+    if (checkBtn) {
+      checkBtn.addEventListener('click', () => {
+        if (practiceChecked) return;
+        if (practiceSelected === null) {
+          const fb = document.getElementById('pq-feedback');
+          fb.style.display = 'block';
+          fb.innerHTML = '<div style="color:var(--amber-text);font-weight:600;">Hãy chọn một đáp án A, B, C hoặc D trước khi kiểm tra.</div>';
+          return;
+        }
+        practiceChecked = true;
+        store.recordAttempt(practiceQ, practiceSelected);
+        updateMistakeBadge();
+        renderPractice();
+      });
+    }
 
-    document.getElementById('pq-sim-btn').addEventListener('click', () => {
-      if (!practiceChecked) return;
-      if (practiceQ.simPreset) {
-        if (practiceQ.simPreset.bubbleDir) store.setPref('bubbleDir', practiceQ.simPreset.bubbleDir);
-        if (practiceQ.simPreset.replaceSide) store.setPref('treeReplaceSide', practiceQ.simPreset.replaceSide);
-        switchTab('sim');
-        selectSimMode(practiceQ.simPreset.mode, practiceQ.simPreset.arr, practiceQ.simPreset.key);
-      } else if (practiceQ.trace && practiceQ.trace.length) {
-        openTraceModal(practiceQ.trace, lessonLabel(practiceQ.type));
-      }
-    });
+    const nextBtn = document.getElementById('pq-next-btn');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => openPractice(practiceFilter, null));
+    }
+
+    if (practiceChecked) {
+      mountInlineQuestionViz(practiceQ, 'pq', 'practice');
+    }
   }
 
   function renderPracticeFeedbackHtml() {
     if (practiceChecked) {
       const ok = practiceSelected === practiceQ.correct;
+      const correctIdx = practiceQ.options.indexOf(practiceQ.correct);
+      const chosenIdx = practiceQ.options.indexOf(practiceSelected);
+      const correctLetter = correctIdx >= 0 ? String.fromCharCode(65 + correctIdx) : '?';
+      const chosenLetter = chosenIdx >= 0 ? String.fromCharCode(65 + chosenIdx) : '?';
+
       return `
-        <div style="font-size:15px;font-weight:700;color:${ok ? 'var(--emerald-text)' : 'var(--rose-text)'};margin-bottom:8px;">
-          ${ok ? '✓ ĐÚNG!' : '✕ CHƯA ĐÚNG — Đã lưu vào Sổ câu sai'}
+        <div class="result-banner ${ok ? 'result-ok' : 'result-wrong'}" style="margin-bottom:14px;">
+          ${ok
+            ? `✓ ĐÚNG! Bạn đã chọn đáp án ${chosenLetter}`
+            : `✕ CHƯA ĐÚNG — Đã lưu vào Sổ câu sai · Bạn chọn ${chosenLetter}, đáp án đúng là ${correctLetter}`}
         </div>
-        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Đáp án đúng: ${esc(practiceQ.correct)}</div>
-        <div style="font-size:13px;color:var(--text-soft);white-space:pre-wrap;line-height:1.65;">${esc(practiceQ.explanation)}</div>
+        ${renderQuestionExplanationHtml(practiceQ, practiceSelected, 'pq')}
       `;
     }
     if (practiceHints > 0) {
@@ -1749,6 +2019,7 @@
   }
 
   function renderExam() {
+    destroyInlineViz('exam');
     const el = document.getElementById('tab-exam');
     if (!examState.active && !examState.done) {
       const recent = store.state.exams.slice().reverse().slice(0, 8);
@@ -1848,19 +2119,32 @@
 
     // Active or Review mode
     const q = examState.questions[examState.index];
+    const chosen = examState.answers[examState.index];
+    const isUnanswered = chosen === null;
+    const isCorrect = !isUnanswered && chosen === q.correct;
+    const isWrong = !isUnanswered && chosen !== q.correct;
+    const correctIdx = q.options.indexOf(q.correct);
+    const chosenIdx = isUnanswered ? -1 : q.options.indexOf(chosen);
+    const correctLetter = correctIdx >= 0 ? String.fromCharCode(65 + correctIdx) : '?';
+    const chosenLetter = chosenIdx >= 0 ? String.fromCharCode(65 + chosenIdx) : '?';
+
     const answeredCount = examState.answers.filter((a) => a !== null).length;
-    const score = examState.done ? examState.questions.filter((item, idx) => examState.answers[idx] === item.correct).length : 0;
-    const grade = examState.done ? (10 * score / examState.questions.length).toFixed(2) : '';
+    const correctCount = examState.done ? examState.questions.filter((item, idx) => examState.answers[idx] === item.correct).length : 0;
+    const skippedCount = examState.done ? examState.answers.filter((a) => a === null).length : 0;
+    const wrongCount = examState.done ? (examState.questions.length - correctCount - skippedCount) : 0;
+    const grade = examState.done ? (10 * correctCount / examState.questions.length).toFixed(2) : '';
 
     el.innerHTML = `
       <div class="centered-container" style="max-width:960px;">
         <div class="surface-card" style="padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div id="exam-clock" class="font-mono-code" style="font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:9px;background:${examState.done ? 'var(--emerald-soft)' : 'var(--amber-soft)'};color:${examState.done ? 'var(--emerald-text)' : 'var(--amber-text)'};">
-            ${examState.done ? `${score}/${examState.questions.length} · ${grade}đ` : ''}
+            ${examState.done ? `${correctCount}/${examState.questions.length} · ${grade}đ` : ''}
           </div>
 
           <button id="ex-palette-trigger" type="button" class="btn exam-palette-trigger">
-            Câu ${examState.index + 1}/${examState.questions.length} (${answeredCount} đã chọn) ▾
+            ${examState.done
+              ? `Câu ${examState.index + 1}/${examState.questions.length} · ✓${correctCount} ✕${wrongCount + skippedCount} ▾`
+              : `Câu ${examState.index + 1}/${examState.questions.length} (${answeredCount} đã chọn) ▾`}
           </button>
 
           <div style="display:flex;align-items:center;gap:6px;">
@@ -1881,27 +2165,64 @@
               <span class="hide-xs" style="font-size:12px;color:var(--text-muted);">Đã chọn ${answeredCount}/${examState.questions.length}</span>
             </div>
             <div style="font-size:15px;font-weight:600;line-height:1.65;white-space:pre-wrap;">${esc(q.prompt)}</div>
+
+            ${examState.done ? `
+              <div class="result-banner ${isCorrect ? 'result-ok' : (isUnanswered ? 'result-missed' : 'result-wrong')}">
+                ${isCorrect
+                  ? `✓ Bạn trả lời ĐÚNG · Đã chọn đáp án ${chosenLetter}`
+                  : (isUnanswered
+                    ? `✕ Bạn bỏ trống câu này (chưa chọn) — Tính sai · Đáp án đúng là ${correctLetter}`
+                    : `✕ Bạn trả lời SAI · Bạn chọn ${chosenLetter}, đáp án đúng là ${correctLetter}`)}
+              </div>
+            ` : ''}
+
             <div class="options-grid">
               ${q.options.map((opt, idx) => {
                 let cls = 'option-card';
+                let tagHtml = '';
                 if (examState.done) {
-                  if (opt === q.correct) cls += ' correct';
-                  else if (examState.answers[examState.index] === opt) cls += ' wrong';
-                } else if (examState.answers[examState.index] === opt) {
+                  if (isUnanswered) {
+                    if (opt === q.correct) {
+                      cls += ' missed';
+                      tagHtml = '<span class="option-tag tag-missed">Bỏ trống · Đáp án đúng</span>';
+                    } else {
+                      cls += ' dimmed';
+                    }
+                  } else if (isCorrect) {
+                    if (opt === q.correct) {
+                      cls += ' correct';
+                      tagHtml = '<span class="option-tag tag-correct">✓ Bạn chọn · Đúng</span>';
+                    } else {
+                      cls += ' dimmed';
+                    }
+                  } else {
+                    if (opt === chosen) {
+                      cls += ' wrong';
+                      tagHtml = '<span class="option-tag tag-wrong">✕ Bạn chọn</span>';
+                    } else if (opt === q.correct) {
+                      cls += ' correct';
+                      tagHtml = '<span class="option-tag tag-correct">✓ Đáp án đúng</span>';
+                    } else {
+                      cls += ' dimmed';
+                    }
+                  }
+                } else if (chosen === opt) {
                   cls += ' selected';
+                  tagHtml = '<span class="option-tag tag-selected">Đang chọn</span>';
                 }
                 return `
                   <button type="button" class="${cls}" data-exopt="${idx}" ${examState.done ? 'disabled' : ''}>
                     <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
-                    <span style="white-space:pre-wrap;">${esc(opt)}</span>
+                    <span class="option-text" style="white-space:pre-wrap;">${esc(opt)}</span>
+                    ${tagHtml}
                   </button>
                 `;
               }).join('')}
             </div>
 
             ${examState.done ? `
-              <div class="surface-sub" style="padding:14px 16px;font-size:13px;line-height:1.65;white-space:pre-wrap;">
-                <strong>Đáp án đúng: ${esc(q.correct)}</strong>\n\n${esc(q.explanation)}
+              <div class="exam-review-explain">
+                ${renderQuestionExplanationHtml(q, chosen, 'ex')}
               </div>
             ` : ''}
           </div>
@@ -1911,14 +2232,35 @@
               <strong style="font-size:14px;">Danh sách ${examState.questions.length} câu hỏi</strong>
               <button id="ex-palette-close" type="button" class="btn btn-ghost" style="padding:4px 8px;">✕ Đóng</button>
             </div>
-            <div class="hide-xs" style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">Bảng câu hỏi</div>
+            <div class="hide-xs" style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">Bảng câu hỏi</div>
+            ${examState.done ? `
+              <div class="exam-palette-summary">
+                <span class="sum-ok">✓ Đúng: ${correctCount}</span>
+                <span class="sum-bad">✕ Sai: ${wrongCount}</span>
+                <span class="sum-skip">○ Bỏ trống: ${skippedCount}</span>
+              </div>
+            ` : ''}
             <div class="exam-palette">
               ${examState.questions.map((item, idx) => {
                 let cls = 'exam-num-btn';
+                let title = `Câu ${idx + 1}`;
                 if (idx === examState.index) cls += ' current';
-                if (examState.done) cls += examState.answers[idx] === item.correct ? ' ok' : ' bad';
-                else if (examState.answers[idx] !== null) cls += ' answered';
-                return `<button type="button" class="${cls}" data-exq="${idx}">${idx + 1}</button>`;
+                if (examState.done) {
+                  const ansVal = examState.answers[idx];
+                  if (ansVal === item.correct) {
+                    cls += ' ok';
+                    title += ': Đúng';
+                  } else if (ansVal === null) {
+                    cls += ' bad skipped';
+                    title += ': Bỏ trống (tính sai)';
+                  } else {
+                    cls += ' bad';
+                    title += ': Sai';
+                  }
+                } else if (examState.answers[idx] !== null) {
+                  cls += ' answered';
+                }
+                return `<button type="button" class="${cls}" data-exq="${idx}" title="${esc(title)}">${idx + 1}</button>`;
               }).join('')}
             </div>
           </div>
@@ -1932,6 +2274,7 @@
     `;
 
     if (!examState.done) tickExamClock();
+    else mountInlineQuestionViz(q, 'ex', 'exam');
 
     const goPrevQ = () => { examState.index = Math.max(0, examState.index - 1); renderExam(); };
     const goNextQ = () => { examState.index = Math.min(examState.questions.length - 1, examState.index + 1); renderExam(); };
@@ -2032,7 +2375,17 @@
       b.addEventListener('click', () => {
         const m = list[parseInt(b.dataset.retry, 10)];
         if (!m) return;
-        const q = { ...m.question, trace: m.question.trace || [] };
+        let q = { ...m.question, trace: m.question.trace || [] };
+        if (m.question.type && m.question.seed) {
+          try {
+            const fresh = Questions.make(m.question.type, m.question.seed, 2);
+            if (fresh && fresh.prompt === m.question.prompt && fresh.correct === m.question.correct) {
+              q = { ...fresh, id: m.question.id };
+            }
+          } catch (err) {
+            // Keep stored question fallback
+          }
+        }
         openPractice(q.type, q);
       });
     });
